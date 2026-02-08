@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinematic Desktop Widget V5</title>
+    
+    <!-- Google Fonts Import -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Inter:wght@300;400;700&family=Playfair+Display:ital,wght@1,400&family=Amiri:wght@400;700&family=Montserrat:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Base Config - Will be updated by JS Themes */
+            --bg-color: #1a1a1a;
+            --glass-bg: rgba(30, 30, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+            --accent: #0a84ff;
+            --font-stack: 'Inter', sans-serif;
+            
+            --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-active: 0 12px 32px rgba(0, 0, 0, 0.4);
+            --danger: #ff453a;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            background-size: cover;
+            background-position: center;
+            font-family: var(--font-stack);
+            color: var(--text-main);
+            transition: background-image 0.5s ease, color 0.3s ease, font-family 0.3s ease;
+        }
+
+        /* RTL Support */
+        body[dir="rtl"] { direction: rtl; text-align: right; }
+        body[dir="rtl"] .menu-bar { left: 10px; right: auto; }
+        body[dir="rtl"] .panel { left: 10px; right: auto; }
+        body[dir="rtl"] .widget-controls { left: 5px; right: auto; }
+        body[dir="rtl"] .widget-resize-handle { left: 0; right: auto; cursor: sw-resize; }
+
+        /* --- UI Overlay --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1000;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        body.ui-visible #ui-layer { opacity: 1; }
+
+        .menu-bar {
+            position: absolute; top: 10px; right: 10px;
+            display: flex; gap: 10px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main); padding: 8px 12px;
+            border-radius: 8px; cursor: pointer;
+            backdrop-filter: blur(10px);
+            font-size: 14px; transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
+        .btn.danger { background: rgba(255, 69, 58, 0.2); border-color: var(--danger); color: var(--danger); }
+        .btn.danger:hover { background: var(--danger); color: white; }
+
+        .panel {
+            position: absolute; top: 50px; right: 10px;
+            width: 340px;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            pointer-events: auto;
+            display: none;
+            box-shadow: var(--shadow-active);
+            max-height: 80vh;
+            overflow-y: auto;
+            color: var(--text-main);
+        }
+        .panel.active { display: block; animation: fadeIn 0.2s ease; }
+
+        .control-group { margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+        .control-group:last-child { border-bottom: none; }
+        .control-group label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        select, input[type="text"], input[type="url"], input[type="color"] {
+            width: 100%; padding: 8px; 
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px; color: var(--text-main); outline: none;
+            font-family: inherit;
+        }
+        select option, input option { background-color: #222; color: white; }
+        select:focus, input:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+
+        /* --- Grid & Widgets --- */
+        #widget-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        .widget {
+            position: absolute;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-light);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, background-color 0.2s;
+            text-decoration: none; 
+            color: var(--text-main);
+        }
+
+        /* Drag Handle - Full Size */
+        .widget-drag-handle {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; opacity: 0; pointer-events: none; cursor: default;
+        }
+        /* Resize Handle */
+        .widget-resize-handle {
+            position: absolute; bottom: 0; right: 0; width: 20px; height: 20px;
+            z-index: 10; cursor: se-resize; opacity: 0; pointer-events: none;
+        }
+        /* Controls */
+        .widget-controls {
+            position: absolute; top: 5px; right: 5px;
+            display: flex; gap: 5px; opacity: 0; pointer-events: none;
+            z-index: 10; transition: opacity 0.2s;
+        }
+        
+        /* Edit Mode States */
+        body.edit-mode .widget-drag-handle {
+            opacity: 0; pointer-events: auto; cursor: grab;
+        }
+        body.edit-mode .widget-drag-handle:active { cursor: grabbing; }
+
+        body.edit-mode .widget-resize-handle,
+        body.edit-mode .widget-controls { opacity: 1; pointer-events: auto; }
+        
+        body.edit-mode .widget {
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+
+        .widget-content {
+            padding: 20px; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center;
+            pointer-events: none; 
+            position: relative; z-index: 1;
+        }
+
+        /* --- Widget Specifics --- */
+        .w-time { text-align: center; }
+        .time-display { font-size: 4rem; font-weight: 200; letter-spacing: -2px; line-height: 1; margin: 0; }
+        .date-display { font-size: 1.2rem; color: var(--text-dim); margin-top: 5px; font-weight: 400; }
+
+        .w-weather { text-align: center; }
+        .weather-temp { font-size: 3.5rem; font-weight: 300; }
+        .weather-loc { font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 5px; }
+        .weather-icon { font-size: 2rem; margin-bottom: 10px; }
+
+        .w-bookmark { justify-content: center; align-items: center; }
+        .w-bookmark .widget-content { justify-content: center; align-items: center; text-align: center; height: 100%; }
+        .bookmark-icon { font-size: 2.5rem; margin-bottom: 5px; line-height: 1; }
+        .bookmark-title { font-size: 1rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+        .mini-btn { background: rgba(255,0,0,0.3); border: none; color: var(--text-main); width: 20px; height: 20px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+
+        #grid-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(var(--glass-border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+            background-size: var(--cell-size) var(--cell-size);
+            pointer-events: none; opacity: 0; z-index: 0;
+        }
+        body.edit-mode #grid-overlay { opacity: 0.3; }
+
+        .dynamic-form { display: none; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
+        .dynamic-form.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body dir="ltr">
+
+    <div id="bg-layer"></div>
+    <div id="grid-overlay"></div>
+    <div id="widget-container"></div>
+
+    <div id="ui-layer">
+        <div class="menu-bar">
+            <button class="btn" id="add-widget-btn" data-i18n="addWidget">+ Add Widget</button>
+            <button class="btn" id="toggle-edit" data-i18n="editLayout">Edit Layout</button>
+            <button class="btn" id="open-settings" data-i18n="settings">Settings</button>
+        </div>
+
+        <div class="panel" id="add-widget-panel">
+            <h3 style="margin-top:0" data-i18n="addWidget">Add Widget</h3>
+            <div class="control-group">
+                <label data-i18n="selectType">Select Type</label>
+                <select id="new-widget-type">
+                    <option value="time" data-i18n="timeWidget">Time Clock</option>
+                    <option value="weather" data-i18n="weatherWidget">Weather</option>
+                    <option value="bookmark" data-i18n="bookmarkWidget">Web Bookmark</option>
+                </select>
+            </div>
+            
+            <div id="form-bookmark" class="dynamic-form">
+                <div class="control-group">
+                    <label data-i18n="title">Title</label>
+                    <input type="text" id="bm-title" placeholder="e.g. YouTube">
+                </div>
+                <div class="control-group">
+                    <label>URL</label>
+                    <input type="url" id="bm-url" placeholder="https://youtube.com">
+                </div>
+                <div class="control-group">
+                    <label data-i18n="icon">Icon (Emoji)</label>
+                    <input type="text" id="bm-icon" value="🔗" style="text-align:center; font-size:1.2rem">
+                </div>
+                <div class="control-group">
+                    <label data-i18n="color">Color</label>
+                    <input type="color" id="bm-color" value="#ff9500" style="height:40px; cursor:pointer">
+                </div>
+            </div>
+
+            <button class="btn" style="width:100%" id="confirm-add-widget" data-i18n="addToLayout">Add to Layout</button>
+        </div>
+
+        <div class="panel" id="settings-panel">
+            <h3 style="margin-top:0" data-i18n="settings">Settings</h3>
+            
+            <!-- Language & Font -->
+            <div class="control-group">
+                <label data-i18n="language">Interface Language</label>
+                <select id="ui-language">
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label data-i18n="font">Font Style</label>
+                <select id="ui-font"></select>
+            </div>
+
+            <!-- Themes -->
+            <div class="control-group">
+                <label data-i18n="theme">Theme</label>
+                <select id="ui-theme">
+                    <option value="default" data-i18n="defaultTheme">Default (Dark)</option>
+                    <option value="forest" data-i18n="forestTheme">Deep Forest</option>
+                    <option value="mist" data-i18n="mistTheme">Mist Gray</option>
+                    <option value="ivory" data-i18n="ivoryTheme">Ivory & Brown</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="gridSize">Grid Size: <span id="grid-size-val">80px</span></label>
+                <input type="range" id="grid-size-input" min="50" max="150" value="80">
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="bgImage">Background Image</label>
+                <input type="file" id="bg-upload" accept="image/*">
+                <button class="btn" style="margin-top:5px; width:100%" id="reset-bg" data-i18n="resetBg">Reset Background</button>
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="weatherLocation">Weather Location (UAE)</label>
+                <select id="uae-city-select">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn danger" style="width:100%" id="reset-layout" data-i18n="factoryReset">Factory Reset Layout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION & DATA ---
+        const CONFIG = {
+            gridSize: 80, gap: 10, inactivityTimeout: 3000,
+            defaultBg: 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=2574&auto=format&fit=crop'
+        };
+
+        const THEMES = {
+            default: {
+                bg: '#1a1a1a', glass: 'rgba(30, 30, 30, 0.6)', border: 'rgba(255, 255, 255, 0.1)',
+                text: '#ffffff', dim: 'rgba(255, 255, 255, 0.6)', accent: '#0a84ff'
+            },
+            forest: {
+                bg: '#102C26', glass: 'rgba(16, 44, 38, 0.7)', border: 'rgba(247, 231, 206, 0.2)',
+                text: '#F7E7CE', dim: 'rgba(247, 231, 206, 0.7)', accent: '#F7E7CE'
+            },
+            mist: {
+                bg: '#ECEFF1', glass: 'rgba(236, 239, 241, 0.7)', border: 'rgba(25, 25, 112, 0.2)',
+                text: '#191970', dim: 'rgba(25, 25, 112, 0.6)', accent: '#191970'
+            },
+            ivory: {
+                bg: '#FFF2E1', glass: 'rgba(255, 242, 225, 0.8)', border: 'rgba(167, 146, 119, 0.3)',
+                text: '#5D4037', dim: 'rgba(93, 64, 55, 0.7)', accent: '#A79277'
+            }
+        };
+
+        const FONTS = {
+            en: [
+                { name: 'Inter (Modern)', family: "'Inter', sans-serif" },
+                { name: 'Playfair Display (Serif)', family: "'Playfair Display', serif" },
+                { name: 'Montserrat (Geometric)', family: "'Montserrat', sans-serif" }
+            ],
+            ar: [
+                { name: 'Cairo (Modern)', family: "'Cairo', sans-serif" },
+                { name: 'Tajawal (Geometric)', family: "'Tajawal', sans-serif" },
+                { name: 'Amiri (Traditional)', family: "'Amiri', serif" }
+            ]
+        };
+
+        const TRANSLATIONS = {
+            en: {
+                addWidget: "+ Add Widget", editLayout: "Edit Layout", settings: "Settings",
+                selectType: "Select Type", timeWidget: "Time Clock", weatherWidget: "Weather", bookmarkWidget: "Web Bookmark",
+                title: "Title", icon: "Icon (Emoji)", color: "Color", addToLayout: "Add to Layout",
+                language: "Interface Language", font: "Font Style", theme: "Theme",
+                defaultTheme: "Default (Dark)", forestTheme: "Deep Forest", mistTheme: "Mist Gray", ivoryTheme: "Ivory & Brown",
+                gridSize: "Grid Size", bgImage: "Background Image", resetBg: "Reset Background",
+                weatherLocation: "Weather Location (UAE)", factoryReset: "Factory Reset Layout"
+            },
+            ar: {
+                addWidget: "+ إضافة ودجت", editLayout: "تعديل التخطيط", settings: "الإعدادات",
+                selectType: "اختر النوع", timeWidget: "ساعة", weatherWidget: "طقس", bookmarkWidget: "رابط ويب",
+                title: "العنوان", icon: "أيقونة (إيموجي)", color: "اللون", addToLayout: "إضافة للتخطيط",
+                language: "لغة الواجهة", font: "نوع الخط", theme: "المظهر",
+                defaultTheme: "الافتراضي (داكن)", forestTheme: "الغابة العميقة", mistTheme: "الضباب الرمادي", ivoryTheme: "عاجي وبني",
+                gridSize: "حجم الشبكة", bgImage: "صورة الخلفية", resetBg: "إعادة تعيين الخلفية",
+                weatherLocation: "موقع الطقس (الإمارات)", factoryReset: "إعادة ضبط المصنع"
+            }
+        };
+
+        const UAE_CITIES = {
+            en: [
+                { name: "Abu Dhabi", lat: 24.4539, lon: 54.3773 },
+                { name: "Dubai", lat: 25.2048, lon: 55.2708 },
+                { name: "Sharjah", lat: 25.3578, lon: 55.3944 },
+                { name: "Ajman", lat: 25.4052, lon: 55.5136 },
+                { name: "Umm Al Quwain", lat: 25.5647, lon: 55.5552 },
+                { name: "Ras Al Khaimah", lat: 25.7346, lon: 55.9941 },
+                { name: "Fujairah", lat: 25.1288, lon: 56.3265 }
+            ],
+            ar: [
+                { name: "أبو ظبي", lat: 24.4539, lon: 54.3773 },
+                { name: "دبي", lat: 25.2048, lon: 55.2708 },
+                { name: "الشارقة", lat: 25.3578, lon: 55.3944 },
+                { name: "عجمان", lat: 25.4052, lon: 55.5136 },
+                { name: "أم القيوين", lat: 25.5647, lon: 55.5552 },
+                { name: "رأس الخيمة", lat: 25.7346, lon: 55.9941 },
+                { name: "الفجيرة", lat: 25.1288, lon: 56.3265 }
+            ]
+        };
+
+        const STATE = {
+            widgets: [], isEditing: false, dragTarget: null, resizeTarget: null,
+            startX: 0, startY: 0, initialLeft: 0, initialTop: 0, initialW: 0, initialH: 0, idleTimer: null,
+            lang: 'en', currentCity: UAE_CITIES.en[0] // Default Abu Dhabi
+        };
+
+        const DOM = {
+            container: document.getElementById('widget-container'),
+            gridOverlay: document.getElementById('grid-overlay'),
+            bg: document.getElementById('bg-layer'),
+            uiLayer: document.getElementById('ui-layer'),
+            editBtn: document.getElementById('toggle-edit'),
+            settingsBtn: document.getElementById('open-settings'),
+            addWidgetBtn: document.getElementById('add-widget-btn'),
+            settingsPanel: document.getElementById('settings-panel'),
+            addWidgetPanel: document.getElementById('add-widget-panel'),
+            gridSizeInput: document.getElementById('grid-size-input'),
+            fileSizeVal: document.getElementById('grid-size-val'),
+            langSelect: document.getElementById('ui-language'),
+            fontSelect: document.getElementById('ui-font'),
+            themeSelect: document.getElementById('ui-theme'),
+            citySelect: document.getElementById('uae-city-select')
+        };
+
+        // --- THEME & LOCALIZATION MANAGERS ---
+
+        function applyTheme(themeKey) {
+            const t = THEMES[themeKey];
+            const root = document.documentElement;
+            root.style.setProperty('--bg-color', t.bg);
+            root.style.setProperty('--glass-bg', t.glass);
+            root.style.setProperty('--glass-border', t.border);
+            root.style.setProperty('--text-main', t.text);
+            root.style.setProperty('--text-dim', t.dim);
+            root.style.setProperty('--accent', t.accent);
+            localStorage.setItem('widget_theme', themeKey);
+        }
+
+        function updateLanguage(lang) {
+            STATE.lang = lang;
+            document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+            
+            // Update Text
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (TRANSLATIONS[lang][key]) el.innerText = TRANSLATIONS[lang][key];
+            });
+
+            // Update Fonts Dropdown
+            DOM.fontSelect.innerHTML = '';
+            FONTS[lang].forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.family;
+                opt.innerText = f.name;
+                DOM.fontSelect.appendChild(opt);
+            });
+            // Restore saved font if possible
+            const savedFont = localStorage.getItem('widget_font');
+            if(savedFont && [...FONTS.en, ...FONTS.ar].find(f => f.family === savedFont)) {
+                DOM.fontSelect.value = savedFont;
+                document.documentElement.style.setProperty('--font-stack', savedFont);
+            }
+
+            // Update City Dropdown
+            DOM.citySelect.innerHTML = '';
+            UAE_CITIES[lang].forEach((city, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.innerText = city.name;
+                if(city.name === "Abu Dhabi" || city.name === "أبو ظبي") opt.selected = true;
+                DOM.citySelect.appendChild(opt);
+            });
+
+            // Update City object in state
+            STATE.currentCity = UAE_CITIES[lang][DOM.citySelect.value];
+
+            localStorage.setItem('widget_lang', lang);
+            
+            // Refresh weather to update city name display
+            STATE.widgets.filter(w => w.type === 'weather').forEach(w => {
+                w.lastWeatherUpdate = 0; 
+                w.refreshData();
+            });
+        }
+
+        // --- WIDGET CLASSES ---
+
+        class Widget {
+            constructor(id, type, x, y, w, h, data = {}) {
+                this.id = id; this.type = type; this.x = x; this.y = y; this.w = w; this.h = h; this.data = data;
+                this.el = null; this.contentRef = {};
+                this.render();
+            }
+
+            render() {
+                this.el = document.createElement('div');
+                this.el.className = `widget w-${this.type}`;
+                this.el.id = this.id;
+                
+                const handle = document.createElement('div');
+                handle.className = 'widget-drag-handle';
+                handle.addEventListener('mousedown', (e) => startDrag(e, this));
+                
+                const resizer = document.createElement('div');
+                resizer.className = 'widget-resize-handle';
+                resizer.addEventListener('mousedown', (e) => startResize(e, this));
+
+                const controls = document.createElement('div');
+                controls.className = 'widget-controls';
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'mini-btn';
+                closeBtn.innerHTML = '×';
+                closeBtn.onclick = () => removeWidget(this.id);
+                controls.appendChild(closeBtn);
+
+                const content = document.createElement('div');
+                content.className = 'widget-content';
+                this.updateContent(content);
+
+                this.el.appendChild(handle);
+                this.el.appendChild(resizer);
+                this.el.appendChild(controls);
+                this.el.appendChild(content);
+
+                DOM.container.appendChild(this.el);
+                this.updateStyle();
+                this.refreshData();
+            }
+
+            updateStyle() {
+                const px = (val) => val * CONFIG.gridSize;
+                this.el.style.width = `calc(${px(this.w)}px - ${CONFIG.gap}px)`;
+                this.el.style.height = `calc(${px(this.h)}px - ${CONFIG.gap}px)`;
+                this.el.style.left = `${px(this.x) + (CONFIG.gap/2)}px`;
+                this.el.style.top = `${px(this.y) + (CONFIG.gap/2)}px`;
+            }
+
+            updateContent(container) {}
+            refreshData() {}
+        }
+
+        class TimeWidget extends Widget {
+            updateContent(container) {
+                const time = document.createElement('h1'); time.className = 'time-display';
+                const date = document.createElement('div'); date.className = 'date-display';
+                container.appendChild(time); container.appendChild(date);
+                this.contentRef = { time, date };
+            }
+            refreshData() {
+                const now = new Date();
+                this.contentRef.time.innerText = now.toLocaleTimeString(STATE.lang === 'ar' ? 'ar-UAE' : 'en-US', {hour: '2-digit', minute:'2-digit'});
+                this.contentRef.date.innerText = now.toLocaleDateString(STATE.lang === 'ar' ? 'ar-UAE' : 'en-US', {weekday: 'long', month: 'short', day: 'numeric'});
+            }
+        }
+
+        class WeatherWidget extends Widget {
+            updateContent(container) {
+                const loc = document.createElement('div'); loc.className = 'weather-loc';
+                const icon = document.createElement('div'); icon.className = 'weather-icon';
+                const temp = document.createElement('div'); temp.className = 'weather-temp';
+                container.appendChild(loc); container.appendChild(icon); container.appendChild(temp);
+                this.contentRef = { loc, icon, temp };
+            }
+            refreshData() {
+                // Force refresh if city changed or 10 min passed
+                if (this.lastWeatherUpdate && Date.now() - this.lastWeatherUpdate < 600000 && this.lastCityName === STATE.currentCity.name) {
+                    return this.renderCachedWeather();
+                }
+                fetchWeather(STATE.currentCity, this);
+            }
+            renderCachedWeather() {
+                if (this.weatherCache) {
+                    this.contentRef.loc.innerText = this.weatherCache.city;
+                    this.contentRef.icon.innerText = this.weatherCache.icon;
+                    this.contentRef.temp.innerText = `${Math.round(this.weatherCache.temp)}°`;
+                }
+            }
+        }
+
+        class BookmarkWidget extends Widget {
+            render() {
+                this.el = document.createElement('a');
+                this.el.className = `widget w-bookmark`;
+                this.el.href = this.data.url || '#';
+                this.el.target = "_blank";
+                
+                const content = document.createElement('div');
+                content.className = 'widget-content';
+                this.updateContent(content);
+                this.el.appendChild(content);
+
+                const controls = document.createElement('div');
+                controls.className = 'widget-controls';
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'mini-btn';
+                closeBtn.innerHTML = '×';
+                closeBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); removeWidget(this.id); };
+                controls.appendChild(closeBtn);
+                
+                const handle = document.createElement('div');
+                handle.className = 'widget-drag-handle';
+                handle.addEventListener('mousedown', (e) => { e.preventDefault(); startDrag(e, this); });
+
+                const resizer = document.createElement('div');
+                resizer.className = 'widget-resize-handle';
+                resizer.addEventListener('mousedown', (e) => { e.preventDefault(); startResize(e, this); });
+
+                this.el.appendChild(handle); this.el.appendChild(resizer); this.el.appendChild(controls);
+                DOM.container.appendChild(this.el);
+                this.updateStyle();
+            }
+
+            updateContent(container) {
+                const icon = document.createElement('div'); icon.className = 'bookmark-icon';
+                const title = document.createElement('div'); title.className = 'bookmark-title';
+                container.appendChild(icon); container.appendChild(title);
+                this.contentRef = { icon, title };
+
+                if (this.data.color) {
+                    this.el.style.backgroundColor = this.data.color;
+                    this.el.style.color = isLightColor(this.data.color) ? '#000' : '#fff';
+                }
+            }
+
+            refreshData() {
+                this.contentRef.icon.innerText = this.data.icon || '🔗';
+                this.contentRef.title.innerText = this.data.title || 'Link';
+            }
+        }
+
+        function isLightColor(hex) {
+            const r = parseInt(hex.substr(1, 2), 16);
+            const g = parseInt(hex.substr(3, 2), 16);
+            const b = parseInt(hex.substr(5, 2), 16);
+            return ((r * 299 + g * 587 + b * 114) / 1000) > 155;
+        }
+
+        // --- WEATHER SERVICE ---
+        async function fetchWeather(cityObj, widgetInstance) {
+            try {
+                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${cityObj.lat}&longitude=${cityObj.lon}&current=temperature_2m,weather_code&timezone=auto`);
+                const weatherData = await weatherRes.json();
+                
+                widgetInstance.weatherCache = {
+                    city: cityObj.name, // Use the localized name from our object
+                    temp: weatherData.current.temperature_2m,
+                    icon: getWMOIcon(weatherData.current.weather_code)
+                };
+                widgetInstance.lastWeatherUpdate = Date.now();
+                widgetInstance.lastCityName = cityObj.name;
+                widgetInstance.renderCachedWeather();
+            } catch (e) { console.error("Weather Error", e); }
+        }
+
+        function getWMOIcon(code) {
+            const codes = { 0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 51: '🌧️', 61: '🌧️', 71: '❄️', 95: '⛈️' };
+            return codes[code] || '🌡️';
+        }
+
+        // --- INTERACTION LOGIC ---
+
+        function startDrag(e, widget) {
+            if (!STATE.isEditing) return;
+            e.preventDefault();
+            e.stopPropagation();
+            STATE.dragTarget = widget;
+            STATE.startX = e.clientX; STATE.startY = e.clientY;
+            STATE.initialLeft = parseFloat(widget.el.style.left);
+            STATE.initialTop = parseFloat(widget.el.style.top);
+            DOM.container.appendChild(widget.el); 
+        }
+
+        function startResize(e, widget) {
+            if (!STATE.isEditing) return;
+            e.preventDefault(); e.stopPropagation();
+            STATE.resizeTarget = widget;
+            STATE.startX = e.clientX; STATE.startY = e.clientY;
+            STATE.initialW = widget.w; STATE.initialH = widget.h;
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            showUI();
+            if (STATE.dragTarget) {
+                const dx = e.clientX - STATE.startX; const dy = e.clientY - STATE.startY;
+                STATE.dragTarget.el.style.left = `${STATE.initialLeft + dx}px`;
+                STATE.dragTarget.el.style.top = `${STATE.initialTop + dy}px`;
+            }
+            if (STATE.resizeTarget) {
+                const dx = e.clientX - STATE.startX; const dy = e.clientY - STATE.startY;
+                const dw = Math.round(dx / CONFIG.gridSize); const dh = Math.round(dy / CONFIG.gridSize);
+                STATE.resizeTarget.w = Math.max(1, STATE.initialW + dw);
+                STATE.resizeTarget.h = Math.max(1, STATE.initialH + dh);
+                STATE.resizeTarget.updateStyle();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (STATE.dragTarget) {
+                const l = parseFloat(STATE.dragTarget.el.style.left);
+                const t = parseFloat(STATE.dragTarget.el.style.top);
+                let newGridX = Math.round(l / CONFIG.gridSize);
+                let newGridY = Math.round(t / CONFIG.gridSize);
+
+                // FREE MODE ONLY - NO SWAPPING
+                STATE.dragTarget.x = newGridX;
+                STATE.dragTarget.y = newGridY;
+                
+                // Boundary Check
+                const maxCols = Math.ceil(window.innerWidth / CONFIG.gridSize);
+                const maxRows = Math.ceil(window.innerHeight / CONFIG.gridSize);
+                if (STATE.dragTarget.x < 0) STATE.dragTarget.x = 0;
+                if (STATE.dragTarget.y < 0) STATE.dragTarget.y = 0;
+                if (STATE.dragTarget.x > maxCols - 1) STATE.dragTarget.x = maxCols - 1;
+                if (STATE.dragTarget.y > maxRows - 1) STATE.dragTarget.y = maxRows - 1;
+
+                STATE.dragTarget.updateStyle(); STATE.dragTarget = null; saveLayout();
+            }
+            if (STATE.resizeTarget) { STATE.resizeTarget = null; saveLayout(); }
+        });
+
+        // --- INITIALIZATION & LOGIC ---
+
+        function init() {
+            // Load Settings
+            const savedTheme = localStorage.getItem('widget_theme') || 'default';
+            DOM.themeSelect.value = savedTheme;
+            applyTheme(savedTheme);
+
+            const savedLang = localStorage.getItem('widget_lang') || 'en';
+            DOM.langSelect.value = savedLang;
+            updateLanguage(savedLang);
+
+            DOM.gridOverlay.style.setProperty('--cell-size', CONFIG.gridSize + 'px');
+
+            // Load Layout
+            const savedLayout = localStorage.getItem('widget_layout');
+            if (savedLayout) {
+                try {
+                    const parsed = JSON.parse(savedLayout);
+                    parsed.forEach(wData => createWidgetFromData(wData));
+                } catch(e) { console.error("Layout corrupt", e); setupDefaultLayout(); }
+            } else { setupDefaultLayout(); }
+
+            // Background
+            const savedBg = localStorage.getItem('widget_bg');
+            DOM.bg.style.backgroundImage = savedBg ? `url('${savedBg}')` : `url('${CONFIG.defaultBg}')`;
+
+            // Loops
+            setInterval(() => STATE.widgets.forEach(w => w.refreshData()), 1000);
+            document.addEventListener('mousemove', showUI); 
+            document.addEventListener('click', showUI);
+            STATE.idleTimer = setTimeout(hideUI, CONFIG.inactivityTimeout);
+            window.addEventListener('resize', () => STATE.widgets.forEach(w => w.updateStyle()));
+        }
+
+        function createWidgetFromData(data) {
+            let w;
+            switch(data.type) {
+                case 'time': w = new TimeWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
+                case 'weather': w = new WeatherWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
+                case 'bookmark': w = new BookmarkWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
+                default: w = new Widget(data.id, data.type, data.x, data.y, data.w, data.h, data.data);
+            }
+            STATE.widgets.push(w);
+        }
+
+        function setupDefaultLayout() {
+            // HARDCODED SAFE POSITIONS to prevent off-screen spawning
+            const timeW = new TimeWidget('w_time_def', 'time', 2, 2, 4, 4);
+            const weatherW = new WeatherWidget('w_weather_def', 'weather', 8, 2, 3, 4);
+            STATE.widgets.push(timeW, weatherW);
+            saveLayout();
+        }
+
+        function removeWidget(id) {
+            const idx = STATE.widgets.findIndex(w => w.id === id);
+            if (idx > -1) { STATE.widgets[idx].el.remove(); STATE.widgets.splice(idx, 1); saveLayout(); }
+        }
+
+        function saveLayout() {
+            const serializable = STATE.widgets.map(w => ({ id: w.id, type: w.type, x: w.x, y: w.y, w: w.w, h: w.h, data: w.data }));
+            localStorage.setItem('widget_layout', JSON.stringify(serializable));
+        }
+
+        // --- UI HANDLERS ---
+
+        function showUI() {
+            DOM.uiLayer.style.opacity = '1';
+            clearTimeout(STATE.idleTimer);
+            STATE.idleTimer = setTimeout(hideUI, CONFIG.inactivityTimeout);
+        }
+
+        function hideUI() {
+            if (!STATE.isEditing && !DOM.settingsPanel.classList.contains('active') && !DOM.addWidgetPanel.classList.contains('active')) {
+                DOM.uiLayer.style.opacity = '0';
+            }
+        }
+
+        function toggleEditMode() {
+            STATE.isEditing = !STATE.isEditing;
+            document.body.classList.toggle('edit-mode', STATE.isEditing);
+            DOM.editBtn.innerText = STATE.isEditing ? (STATE.lang === 'ar' ? "تم" : "Done") : (STATE.lang === 'ar' ? "تعديل" : "Edit Layout");
+            if(STATE.isEditing) showUI();
+        }
+
+        DOM.addWidgetBtn.onclick = () => {
+            DOM.addWidgetPanel.classList.toggle('active');
+            DOM.settingsPanel.classList.remove('active');
+            showUI();
+        };
+        DOM.settingsBtn.onclick = () => {
+            DOM.settingsPanel.classList.toggle('active');
+            DOM.addWidgetPanel.classList.remove('active');
+            showUI();
+        };
+
+        document.getElementById('new-widget-type').onchange = (e) => {
+            const val = e.target.value;
+            document.querySelectorAll('.dynamic-form').forEach(el => el.classList.remove('active'));
+            if(val === 'bookmark') document.getElementById('form-bookmark').classList.add('active');
+        };
+
+        document.getElementById('confirm-add-widget').onclick = () => {
+            const type = document.getElementById('new-widget-type').value;
+            const id = 'w_' + Date.now();
+            let x = 0, y = 0, data = {}, w = 2, h = 2;
+            if (type === 'time') { w = 4; h = 4; }
+            if (type === 'weather') { w = 3; h = 4; }
+            if (type === 'bookmark') {
+                w = 2; h = 2;
+                data.title = document.getElementById('bm-title').value || "Link";
+                data.url = document.getElementById('bm-url').value || "#";
+                data.icon = document.getElementById('bm-icon').value || "🔗";
+                data.color = document.getElementById('bm-color').value || "#ff9500";
+            }
+            createWidgetFromData({ id, type, x, y, w, h, data });
+            saveLayout();
+            DOM.addWidgetPanel.classList.remove('active');
+        };
+
+        DOM.editBtn.onclick = toggleEditMode;
+        
+        DOM.gridSizeInput.oninput = (e) => {
+            const val = e.target.value; CONFIG.gridSize = parseInt(val);
+            DOM.fileSizeVal.innerText = val + 'px';
+            DOM.gridOverlay.style.setProperty('--cell-size', val + 'px');
+            STATE.widgets.forEach(w => w.updateStyle()); saveLayout(); 
+        };
+
+        DOM.themeSelect.onchange = (e) => applyTheme(e.target.value);
+        DOM.langSelect.onchange = (e) => updateLanguage(e.target.value);
+        DOM.fontSelect.onchange = (e) => {
+            document.documentElement.style.setProperty('--font-stack', e.target.value);
+            localStorage.setItem('widget_font', e.target.value);
+        };
+        DOM.citySelect.onchange = (e) => {
+            STATE.currentCity = UAE_CITIES[STATE.lang][e.target.value];
+            // Force update all weather widgets
+            STATE.widgets.filter(w => w.type === 'weather').forEach(w => {
+                w.lastWeatherUpdate = 0; 
+                w.refreshData();
+            });
+        };
+
+        document.getElementById('bg-upload').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    DOM.bg.style.backgroundImage = `url('${ev.target.result}')`;
+                    localStorage.setItem('widget_bg', ev.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        document.getElementById('reset-bg').onclick = () => {
+            localStorage.removeItem('widget_bg');
+            DOM.bg.style.backgroundImage = `url('${CONFIG.defaultBg}')`;
+        };
+
+        document.getElementById('reset-layout').onclick = () => {
+            if(confirm(STATE.lang === 'ar' ? "هل أنت متأكد؟ سيتم حذف التخصيص." : "Are you sure? This will reset all widgets.")) {
+                localStorage.removeItem('widget_layout');
+                DOM.container.innerHTML = '';
+                STATE.widgets = [];
+                setupDefaultLayout();
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>

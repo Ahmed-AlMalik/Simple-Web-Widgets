@@ -103,6 +103,23 @@
         select option, input option { background-color: #222; color: white; }
         select:focus, input:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
 
+        /* Custom Dropdown */
+        .custom-dropdown { position: relative; width: 100%; }
+        .dropdown-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-main); cursor: pointer; font-family: inherit; font-size: inherit; text-align: left; display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
+        body[dir="rtl"] .dropdown-btn { text-align: right; }
+        .dropdown-btn:hover { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+        .dropdown-btn::after { content: '▼'; font-size: 0.7rem; margin-left: 8px; transition: transform 0.2s; }
+        body[dir="rtl"] .dropdown-btn::after { margin-left: 0; margin-right: 8px; }
+        .dropdown-btn.open::after { transform: rotate(180deg); }
+        .dropdown-menu { position: absolute; top: 100%; left: 0; right: 0; background: var(--panel-bg); border: 1px solid var(--glass-border); border-radius: 6px; border-top: none; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; pointer-events: auto; box-shadow: var(--shadow-active); }
+        body[dir="rtl"] .dropdown-menu { left: auto; right: 0; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { padding: 8px 12px; cursor: pointer; color: var(--text-main); transition: all 0.2s; }
+        .dropdown-item:hover { background: rgba(10, 132, 255, 0.2); }
+        .dropdown-item.selected { background: var(--accent); color: white; font-weight: 600; }
+        /* Hide native selects */
+        select { display: none; }
+
         /* --- Grid & Widgets --- */
         #widget-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -179,7 +196,7 @@
 
         .w-weather { text-align: center; }
         .weather-temp { font-size: 3.5rem; font-weight: 300; }
-        .weather-loc { font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 5px; }
+        .weather-loc { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 5px; }
         .weather-icon { font-size: 2rem; margin-bottom: 10px; transition: opacity 0.3s; }
         .w-weather[data-width="2"] .weather-icon { display: none; }
         .w-weather[data-width="2"] .weather-temp { font-size: 2.5rem; }
@@ -284,7 +301,19 @@
             <h3 style="margin-top:0" data-i18n="addWidget">Add Widget</h3>
             <div class="control-group">
                 <label data-i18n="selectType">Select Type</label>
-                <select id="new-widget-type">
+                <div class="custom-dropdown" id="dropdown-widget-type">
+                    <button class="dropdown-btn" id="dropdown-widget-type-btn">Time Clock</button>
+                    <div class="dropdown-menu" id="dropdown-widget-type-menu">
+                        <div class="dropdown-item" data-value="time">Time Clock</div>
+                        <div class="dropdown-item" data-value="weather">Weather</div>
+                        <div class="dropdown-item" data-value="prayer">Prayer Times</div>
+                        <div class="dropdown-item" data-value="notes">Notes</div>
+                        <div class="dropdown-item" data-value="todo">Todo List</div>
+                        <div class="dropdown-item" data-value="google-search">Google Search</div>
+                        <div class="dropdown-item" data-value="bookmark">Web Bookmark</div>
+                    </div>
+                </div>
+                <select id="new-widget-type" style="display: none;">
                     <option value="time" data-i18n="timeWidget">Time Clock</option>
                     <option value="weather" data-i18n="weatherWidget">Weather</option>
                     <option value="prayer" data-i18n="prayerWidget">Prayer Times</option>
@@ -310,19 +339,39 @@
             
             <div class="control-group">
                 <label data-i18n="language">Interface Language</label>
-                <select id="ui-language">
+                <div class="custom-dropdown" id="dropdown-language">
+                    <button class="dropdown-btn" id="dropdown-language-btn">English</button>
+                    <div class="dropdown-menu" id="dropdown-language-menu">
+                        <div class="dropdown-item selected" data-value="en">English</div>
+                        <div class="dropdown-item" data-value="ar">العربية</div>
+                    </div>
+                </div>
+                <select id="ui-language" style="display: none;">
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
                 </select>
             </div>
             <div class="control-group">
                 <label data-i18n="font">Font Style</label>
-                <select id="ui-font"></select>
+                <div class="custom-dropdown" id="dropdown-font">
+                    <button class="dropdown-btn" id="dropdown-font-btn">Select Font</button>
+                    <div class="dropdown-menu" id="dropdown-font-menu"></div>
+                </div>
+                <select id="ui-font" style="display: none;"></select>
             </div>
 
             <div class="control-group">
                 <label data-i18n="theme">Theme</label>
-                <select id="ui-theme">
+                <div class="custom-dropdown" id="dropdown-theme">
+                    <button class="dropdown-btn" id="dropdown-theme-btn">Default (Dark)</button>
+                    <div class="dropdown-menu" id="dropdown-theme-menu">
+                        <div class="dropdown-item selected" data-value="default">Default (Dark)</div>
+                        <div class="dropdown-item" data-value="forest">Deep Forest</div>
+                        <div class="dropdown-item" data-value="mist">Mist Gray</div>
+                        <div class="dropdown-item" data-value="ivory">Ivory & Brown</div>
+                    </div>
+                </div>
+                <select id="ui-theme" style="display: none;">
                     <option value="default" data-i18n="defaultTheme">Default (Dark)</option>
                     <option value="forest" data-i18n="forestTheme">Deep Forest</option>
                     <option value="mist" data-i18n="mistTheme">Mist Gray</option>
@@ -332,13 +381,22 @@
             </div>
 
             <div class="control-group">
+                <label>Background Color</label>
+                <input type="color" id="bg-color-input" value="#1a1a1a" style="height:40px; cursor:pointer">
+            </div>
+
+            <div class="control-group">
                 <label data-i18n="gridSize">Grid Size: <span id="grid-size-val">80px</span></label>
                 <input type="range" id="grid-size-input" min="50" max="150" value="80">
             </div>
 
             <div class="control-group">
                 <label data-i18n="weatherLocation">Location (Weather & Prayer)</label>
-                <select id="location-select">
+                <div class="custom-dropdown" id="dropdown-location">
+                    <button class="dropdown-btn" id="dropdown-location-btn">Abu Dhabi</button>
+                    <div class="dropdown-menu" id="dropdown-location-menu"></div>
+                </div>
+                <select id="location-select" style="display: none;">
                     <!-- Options populated by JS -->
                 </select>
             </div>
@@ -369,7 +427,16 @@
 
                 <div class="control-group">
                     <label>Border Style</label>
-                    <select id="setting-border-style">
+                    <div class="custom-dropdown" id="dropdown-border-style">
+                        <button class="dropdown-btn" id="dropdown-border-style-btn">Solid</button>
+                        <div class="dropdown-menu" id="dropdown-border-style-menu">
+                            <div class="dropdown-item selected" data-value="solid">Solid</div>
+                            <div class="dropdown-item" data-value="dashed">Dashed</div>
+                            <div class="dropdown-item" data-value="dotted">Dotted</div>
+                            <div class="dropdown-item" data-value="double">Double</div>
+                        </div>
+                    </div>
+                    <select id="setting-border-style" style="display: none;">
                         <option value="solid">Solid</option>
                         <option value="dashed">Dashed</option>
                         <option value="dotted">Dotted</option>
@@ -399,7 +466,60 @@
     </div>
 
     <script>
-        // --- CONFIGURATION ---
+        // --- CUSTOM DROPDOWN HANDLER ---
+        function initCustomDropdown(dropdownId, selectId) {
+            const btn = document.getElementById(`${dropdownId}-btn`);
+            const menu = document.getElementById(`${dropdownId}-menu`);
+            const selectEl = document.getElementById(selectId);
+            
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('show');
+                btn.classList.toggle('open', menu.classList.contains('show'));
+            };
+            
+            attachDropdownItemHandlers(dropdownId, selectId);
+        }
+        
+        function attachDropdownItemHandlers(dropdownId, selectId) {
+            const btn = document.getElementById(`${dropdownId}-btn`);
+            const menu = document.getElementById(`${dropdownId}-menu`);
+            const selectEl = document.getElementById(selectId);
+            
+            Array.from(menu.children).forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    const value = item.dataset.value;
+                    const text = item.innerText;
+                    
+                    // Update button text
+                    btn.innerText = text;
+                    
+                    // Update selected state
+                    Array.from(menu.children).forEach(child => child.classList.remove('selected'));
+                    item.classList.add('selected');
+                    
+                    // Update native select
+                    if(selectEl) {
+                        selectEl.value = value;
+                        selectEl.dispatchEvent(new Event('change'));
+                    }
+                    
+                    // Close menu
+                    menu.classList.remove('show');
+                    btn.classList.remove('open');
+                };
+            });
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                menu.classList.remove('show');
+                menu.previousElementSibling.classList.remove('open');
+            });
+        });
+
         const CONFIG = {
             gridSize: 80, gap: 10, inactivityTimeout: 3000
         };
@@ -526,18 +646,34 @@
             root.style.setProperty('--text-main', t.text);
             root.style.setProperty('--text-dim', t.dim);
             root.style.setProperty('--accent', t.accent);
+            document.body.style.backgroundColor = t.bg;
+            document.getElementById('bg-color-input').value = t.bg;
             Storage.set('widget_theme', themeKey);
         }
 
         function updateLocationDropdown(lang) {
+            const locMenu = document.getElementById('dropdown-location-menu');
+            const locBtn = document.getElementById('dropdown-location-btn');
+            locMenu.innerHTML = '';
             DOM.locSelect.innerHTML = '';
             UAE_LOCATIONS.forEach((loc) => {
                 const opt = document.createElement('option'); 
                 opt.value = loc.id;
-                opt.innerText = (lang === 'ar' && loc.arName) ? loc.arName : loc.name;
+                const displayName = (lang === 'ar' && loc.arName) ? loc.arName : loc.name;
+                opt.innerText = displayName;
                 if(loc.id === STATE.currentLoc.id) opt.selected = true;
                 DOM.locSelect.appendChild(opt);
+                
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.dataset.value = loc.id;
+                item.innerText = displayName;
+                if(loc.id === STATE.currentLoc.id) item.classList.add('selected');
+                locMenu.appendChild(item);
             });
+            locBtn.innerText = (lang === 'ar' && STATE.currentLoc.arName) ? STATE.currentLoc.arName : STATE.currentLoc.name;
+            // Re-attach handlers after populating items
+            attachDropdownItemHandlers('dropdown-location', 'location-select');
         }
 
         function updateLanguage(lang) {
@@ -548,15 +684,28 @@
                 if (TRANSLATIONS[lang][key]) el.innerText = TRANSLATIONS[lang][key];
             });
 
+            // Update font dropdown
+            const fontMenu = document.getElementById('dropdown-font-menu');
+            const fontBtn = document.getElementById('dropdown-font-btn');
+            fontMenu.innerHTML = '';
             DOM.fontSelect.innerHTML = '';
             FONTS[lang].forEach(f => {
                 const opt = document.createElement('option'); opt.value = f.family; opt.innerText = f.name; DOM.fontSelect.appendChild(opt);
+                const item = document.createElement('div'); item.className = 'dropdown-item'; item.dataset.value = f.family; item.innerText = f.name; fontMenu.appendChild(item);
             });
             const savedFont = Storage.get('widget_font');
             if(savedFont) {
                 DOM.fontSelect.value = savedFont;
+                fontBtn.innerText = FONTS[lang].find(f => f.family === savedFont)?.name || 'Select Font';
                 document.documentElement.style.setProperty('--font-stack', savedFont);
+                Array.from(fontMenu.children).forEach(item => {
+                    if(item.dataset.value === savedFont) item.classList.add('selected');
+                });
+            } else {
+                fontBtn.innerText = 'Select Font';
             }
+            // Re-attach handlers after populating items
+            attachDropdownItemHandlers('dropdown-font', 'ui-font');
 
             updateLocationDropdown(lang);
             
@@ -661,7 +810,14 @@
             }
             refreshData() {
                 const now = new Date();
-                this.contentRef.time.innerText = now.toLocaleTimeString(STATE.lang === 'ar' ? 'ar-UAE' : 'en-US', {hour: '2-digit', minute:'2-digit'});
+                if(STATE.lang === 'ar') {
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const ampm = now.getHours() < 12 ? 'ص' : 'م';
+                    this.contentRef.time.innerText = `${hours}:${minutes} ${ampm}`;
+                } else {
+                    this.contentRef.time.innerText = now.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+                }
                 this.contentRef.date.innerText = now.toLocaleDateString(STATE.lang === 'ar' ? 'ar-UAE' : 'en-US', {weekday: 'long', month: 'short', day: 'numeric'});
             }
         }
@@ -1239,8 +1395,24 @@
         // --- INITIALIZATION ---
         function init() {
             try {
+                // Initialize custom dropdowns
+                initCustomDropdown('dropdown-widget-type', 'new-widget-type');
+                initCustomDropdown('dropdown-language', 'ui-language');
+                initCustomDropdown('dropdown-font', 'ui-font');
+                initCustomDropdown('dropdown-theme', 'ui-theme');
+                initCustomDropdown('dropdown-location', 'location-select');
+                initCustomDropdown('dropdown-border-style', 'setting-border-style');
+
                 const savedTheme = Storage.get('widget_theme') || 'default';
                 DOM.themeSelect.value = savedTheme; applyTheme(savedTheme);
+                document.getElementById('dropdown-theme-btn').innerText = ['Default (Dark)', 'Deep Forest', 'Mist Gray', 'Ivory & Brown'][['default', 'forest', 'mist', 'ivory'].indexOf(savedTheme)];
+
+                // Load saved background color
+                const savedBgColor = Storage.get('widget_bg_color');
+                if(savedBgColor) {
+                    document.body.style.backgroundColor = savedBgColor;
+                    document.getElementById('bg-color-input').value = savedBgColor;
+                }
 
                 // Primary: localStorage, Fallback: sessionStorage, Default: 'en'
                 let savedLang = Storage.get('widget_lang');
@@ -1253,6 +1425,7 @@
                 }
                 savedLang = savedLang || 'en';
                 DOM.langSelect.value = savedLang; 
+                document.getElementById('dropdown-language-btn').innerText = (savedLang === 'ar') ? 'العربية' : 'English';
                 updateLanguage(savedLang);
 
                 const savedLoc = Storage.get('widget_loc');
@@ -1386,6 +1559,10 @@
             DOM.fileSizeVal.innerText = val + 'px';
             DOM.gridOverlay.style.setProperty('--cell-size', val + 'px');
             STATE.widgets.forEach(w => w.updateStyle()); saveLayout(); 
+        };
+        document.getElementById('bg-color-input').oninput = (e) => {
+            document.body.style.backgroundColor = e.target.value;
+            Storage.set('widget_bg_color', e.target.value);
         };
         DOM.themeSelect.onchange = (e) => applyTheme(e.target.value);
         document.getElementById('apply-theme-colors').onclick = () => {

@@ -119,6 +119,12 @@
         .dropdown-item.selected { background: var(--accent); color: white; font-weight: 600; }
         /* Hide native selects */
         select { display: none; }
+        
+        /* Widget Type Button Grid */
+        .widget-type-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px; }
+        .widget-type-btn { padding: 10px; background: rgba(255,255,255,0.1); border: 2px solid var(--glass-border); border-radius: 6px; color: var(--text-main); cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
+        .widget-type-btn:hover { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+        .widget-type-btn.selected { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
 
         /* --- Grid & Widgets --- */
         #widget-container {
@@ -301,17 +307,14 @@
             <h3 style="margin-top:0" data-i18n="addWidget">Add Widget</h3>
             <div class="control-group">
                 <label data-i18n="selectType">Select Type</label>
-                <div class="custom-dropdown" id="dropdown-widget-type">
-                    <button class="dropdown-btn" id="dropdown-widget-type-btn">Time Clock</button>
-                    <div class="dropdown-menu" id="dropdown-widget-type-menu">
-                        <div class="dropdown-item" data-value="time">Time Clock</div>
-                        <div class="dropdown-item" data-value="weather">Weather</div>
-                        <div class="dropdown-item" data-value="prayer">Prayer Times</div>
-                        <div class="dropdown-item" data-value="notes">Notes</div>
-                        <div class="dropdown-item" data-value="todo">Todo List</div>
-                        <div class="dropdown-item" data-value="google-search">Google Search</div>
-                        <div class="dropdown-item" data-value="bookmark">Web Bookmark</div>
-                    </div>
+                <div class="widget-type-buttons">
+                    <button class="widget-type-btn selected" data-value="time">⏰ Time</button>
+                    <button class="widget-type-btn" data-value="weather">🌤️ Weather</button>
+                    <button class="widget-type-btn" data-value="prayer">🕌 Prayer</button>
+                    <button class="widget-type-btn" data-value="notes">📝 Notes</button>
+                    <button class="widget-type-btn" data-value="todo">✓ Todo</button>
+                    <button class="widget-type-btn" data-value="google-search">🔍 Search</button>
+                    <button class="widget-type-btn" data-value="bookmark">🔗 Bookmark</button>
                 </div>
                 <select id="new-widget-type" style="display: none;">
                     <option value="time" data-i18n="timeWidget">Time Clock</option>
@@ -1396,12 +1399,25 @@
         function init() {
             try {
                 // Initialize custom dropdowns
-                initCustomDropdown('dropdown-widget-type', 'new-widget-type');
                 initCustomDropdown('dropdown-language', 'ui-language');
                 initCustomDropdown('dropdown-font', 'ui-font');
                 initCustomDropdown('dropdown-theme', 'ui-theme');
                 initCustomDropdown('dropdown-location', 'location-select');
                 initCustomDropdown('dropdown-border-style', 'setting-border-style');
+                
+                // Initialize widget type buttons
+                document.querySelectorAll('.widget-type-btn').forEach(btn => {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        const val = btn.dataset.value;
+                        document.querySelectorAll('.widget-type-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        document.getElementById('new-widget-type').value = val;
+                        // Show/hide bookmark form
+                        document.querySelectorAll('.dynamic-form').forEach(el => el.classList.remove('active'));
+                        if(val === 'bookmark') document.getElementById('form-bookmark').classList.add('active');
+                    };
+                });
 
                 const savedTheme = Storage.get('widget_theme') || 'default';
                 DOM.themeSelect.value = savedTheme; applyTheme(savedTheme);
@@ -1524,12 +1540,6 @@
         document.getElementById('btn-apply-all-settings').onclick = () => SettingsManager.applyToAll();
         document.getElementById('btn-close-settings').onclick = () => SettingsManager.close();
         document.getElementById('widget-settings-modal').onclick = (e) => { if(e.target.id === 'widget-settings-modal') SettingsManager.close(); };
-
-        document.getElementById('new-widget-type').onchange = (e) => {
-            const val = e.target.value;
-            document.querySelectorAll('.dynamic-form').forEach(el => el.classList.remove('active'));
-            if(val === 'bookmark') document.getElementById('form-bookmark').classList.add('active');
-        };
 
         document.getElementById('confirm-add-widget').onclick = () => {
             const type = document.getElementById('new-widget-type').value;

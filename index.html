@@ -44,8 +44,6 @@
         body[dir="rtl"] .menu-bar { left: 10px; right: auto; }
         body[dir="rtl"] .panel { left: 10px; right: auto; }
         body[dir="rtl"] .widget-controls { left: 5px; right: auto; }
-        body[dir="rtl"] .todo-check { margin-right: 10px; margin-left: 0; }
-        body[dir="ltr"] .todo-check { margin-left: 10px; margin-right: 0; }
 
         /* --- UI Overlay --- */
         #ui-layer {
@@ -113,11 +111,11 @@
 
         .widget {
             position: absolute;
-            background: var(--glass-bg);
+            background: var(--widget-bg, var(--glass-bg));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 18px;
+            border: var(--widget-border, 1px solid var(--glass-border));
+            border-radius: var(--widget-radius, 18px);
             box-shadow: var(--shadow-light);
             display: flex; flex-direction: column;
             overflow: hidden;
@@ -151,6 +149,15 @@
             display: flex; gap: 5px; opacity: 0; pointer-events: none;
             z-index: 30; transition: opacity 0.2s;
         }
+        body[dir="rtl"] .widget-controls {
+            right: auto; left: 5px;
+        }
+        .widget-settings-btn { position: absolute; top: 5px; left: 5px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 18px; padding: 5px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; opacity: 0; pointer-events: none; z-index: 30; }
+        body[dir="rtl"] .widget-settings-btn {
+            left: auto; right: 5px;
+        }
+        body.edit-mode .widget-settings-btn { opacity: 1; pointer-events: auto; }
+        .widget-settings-btn:hover { color: var(--accent); }
         
         body.edit-mode .widget-drag-handle { opacity: 0; pointer-events: auto; cursor: grab; }
         body.edit-mode .widget-drag-handle:active { cursor: grabbing; }
@@ -177,36 +184,59 @@
         .w-weather[data-width="2"] .weather-icon { display: none; }
         .w-weather[data-width="2"] .weather-temp { font-size: 2.5rem; }
 
-        .w-prayer { text-align: left; }
-        body[dir="rtl"] .w-prayer { text-align: right; }
-        .prayer-header { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px; }
-        .hijri-date { font-size: 0.9rem; color: var(--accent); margin-bottom: 10px; font-weight: 600; text-align: center; }
-        .prayer-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.95rem; cursor: default; transition: background 0.2s; padding: 4px; border-radius: 6px; }
-        .prayer-row:hover { background: rgba(255,255,255,0.1); }
-        .prayer-row.active { color: var(--accent); font-weight: bold; background: rgba(10, 132, 255, 0.1); }
-        .prayer-progress { margin-top: 10px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
-        .prayer-bar { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
-        .next-prayer-label { font-size: 0.8rem; color: var(--text-dim); margin-top: 5px; text-align: center; }
-        .w-prayer[data-height="3"] .prayer-list { display: none; }
-        .w-prayer[data-height="3"] .prayer-header { font-size: 1rem; border: none; margin: 0; text-align: center; }
-        .w-prayer[data-height="3"] .prayer-progress { margin-top: 20px; }
-
-        .w-todo, .w-notes { text-align: left; }
-        body[dir="rtl"] .w-todo, body[dir="rtl"] .w-notes { text-align: right; }
-        .todo-container { height: 100%; overflow-y: auto; pointer-events: auto; }
-        .todo-item { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-dim); }
-        .todo-item.done { text-decoration: line-through; opacity: 0.5; }
-        .todo-input { width: 100%; background: transparent; border: none; color: var(--text-main); font-family: inherit; outline: none; font-size: 0.9rem; pointer-events: auto; margin-top: 5px; }
-        .todo-check { width: 16px; height: 16px; border: 2px solid var(--text-dim); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .todo-item.done .todo-check { background-color: var(--accent); border-color: var(--accent); }
-        .todo-item.done .todo-check::after { content: '✔'; color: white; font-size: 10px; }
-
-        .notes-area, .todo-input::placeholder { color: var(--text-dim); opacity: 0.5; }
-
         .w-bookmark { justify-content: center; align-items: center; }
         .w-bookmark .widget-content { justify-content: center; align-items: center; text-align: center; height: 100%; }
         .bookmark-icon { font-size: 2.5rem; margin-bottom: 5px; line-height: 1; }
         .bookmark-title { font-size: 1rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+        .w-notes .widget-content { pointer-events: auto; justify-content: flex-start; }
+        .notes-area {
+            width: 100%; height: 100%;
+            background: transparent; border: none; color: var(--text-main);
+            font-family: inherit; resize: none; outline: none;
+            font-size: 1rem; line-height: 1.5;
+        }
+        .notes-area::placeholder { color: var(--text-dim); opacity: 0.5; }
+
+        .w-todo .widget-content { pointer-events: auto; justify-content: flex-start; flex-direction: column; }
+        .todo-input-container { display: flex; gap: 5px; margin-bottom: 10px; pointer-events: auto; }
+        .todo-input { flex: 1; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); 
+            border-radius: 6px; color: var(--text-main); font-family: inherit; outline: none; font-size: 0.95rem; }
+        .todo-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+        .todo-add-btn { padding: 8px 12px; background: var(--accent); border: none; border-radius: 6px; color: white; 
+            cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.2s; }
+        .todo-add-btn:hover { opacity: 0.9; transform: scale(1.02); }
+        .todo-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+        .todo-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px; 
+            background: rgba(255,255,255,0.05); border-radius: 6px; pointer-events: auto; }
+        .todo-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+        .todo-text { flex: 1; word-break: break-word; }
+        .todo-item.completed .todo-text { text-decoration: line-through; color: var(--text-dim); opacity: 0.6; }
+        .todo-remove-btn { padding: 6px 10px; background: transparent; border: none; border-radius: 4px; color: var(--text-dim); 
+            cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
+        .todo-remove-btn:hover { background: var(--danger); color: white; }
+
+        .w-google-search .widget-content { pointer-events: auto; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .google-search-container { display: flex; align-items: center; gap: 12px; width: 100%; }
+        body[dir="ltr"] .google-search-container { flex-direction: row; }
+        body[dir="rtl"] .google-search-container { flex-direction: row-reverse; }
+        .google-logo { width: 32px; height: 32px; flex-shrink: 0; object-fit: contain; }
+        .google-search-input { flex: 1; padding: 10px 15px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); 
+            border-radius: 20px; color: var(--text-main); font-family: inherit; outline: none; font-size: 0.95rem; }
+        .google-search-input::placeholder { color: var(--text-dim); }
+        .google-search-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.15); }
+
+        .w-prayer { text-align: left; }
+        body[dir="rtl"] .w-prayer { text-align: right; }
+        .prayer-header { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px; }
+        .prayer-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.95rem; }
+        .prayer-row.active { color: var(--accent); font-weight: bold; }
+        .prayer-progress { margin-top: 10px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+        .prayer-bar { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
+        .next-prayer-label { font-size: 0.8rem; color: var(--text-dim); margin-top: 5px; }
+        .w-prayer[data-height="3"] .prayer-list { display: none; }
+        .w-prayer[data-height="3"] .prayer-header { font-size: 1rem; border: none; margin: 0; text-align: center; }
+        .w-prayer[data-height="3"] .prayer-progress { margin-top: 20px; }
 
         .mini-btn { background: rgba(255,0,0,0.3); border: none; color: var(--text-main); width: 20px; height: 20px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 
@@ -223,12 +253,23 @@
         .dynamic-form.active { display: block; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .widget-settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 10000; pointer-events: none; }
+        .widget-settings-modal.active { display: flex; pointer-events: auto; }
+        .widget-settings-modal-content { background: var(--panel-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-active); backdrop-filter: blur(20px); pointer-events: auto; }
+        .widget-settings-modal h3 { margin-top: 0; margin-bottom: 20px; color: var(--text-main); }
+        .settings-preview { margin-bottom: 20px; padding: 15px; border-radius: var(--preview-radius, 18px); background: var(--preview-bg, var(--glass-bg)); border: var(--preview-border, 1px solid var(--glass-border)); text-align: center; font-size: 0.9rem; color: var(--text-main); }
+        .settings-modal-controls { display: flex; gap: 10px; margin-top: 20px; }
+        .settings-modal-controls button { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; pointer-events: auto; }
+        .settings-modal-controls .btn-save { background: var(--accent); color: white; }
+        .settings-modal-controls .btn-reset { background: rgba(255,69,58,0.2); color: var(--danger); }
+        .settings-modal-controls .btn-close { background: rgba(255,255,255,0.1); color: var(--text-main); }
+
+        .widget-settings-modal input, .widget-settings-modal select { pointer-events: auto; }
     </style>
 </head>
 <body dir="ltr">
 
-    <div id="bg-layer" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"></div>
-    
     <div id="grid-overlay"></div>
     <div id="widget-container"></div>
 
@@ -247,8 +288,9 @@
                     <option value="time" data-i18n="timeWidget">Time Clock</option>
                     <option value="weather" data-i18n="weatherWidget">Weather</option>
                     <option value="prayer" data-i18n="prayerWidget">Prayer Times</option>
-                    <option value="todo" data-i18n="todoWidget">To-Do List</option>
                     <option value="notes" data-i18n="notesWidget">Notes</option>
+                    <option value="todo" data-i18n="todoWidget">Todo List</option>
+                    <option value="google-search" data-i18n="searchWidget">Google Search</option>
                     <option value="bookmark" data-i18n="bookmarkWidget">Web Bookmark</option>
                 </select>
             </div>
@@ -286,6 +328,7 @@
                     <option value="mist" data-i18n="mistTheme">Mist Gray</option>
                     <option value="ivory" data-i18n="ivoryTheme">Ivory & Brown</option>
                 </select>
+                <button class="btn" style="width:100%; margin-top: 8px;" id="apply-theme-colors" data-i18n="applyThemeColors">Apply Theme Colors to Widgets</button>
             </div>
 
             <div class="control-group">
@@ -295,21 +338,62 @@
 
             <div class="control-group">
                 <label data-i18n="weatherLocation">Location (Weather & Prayer)</label>
-                <select id="location-select"></select>
-            </div>
-
-            <div class="control-group">
-                <label data-i18n="bgImage">Background Image</label>
-                <input type="file" id="bg-upload" accept="image/*">
-                <!-- Apply Button added -->
-                <div style="display: flex; gap: 10px; margin-top: 5px;">
-                    <button class="btn" id="apply-bg" style="flex:1; display:none;">Apply Background</button>
-                    <button class="btn" id="reset-bg" data-i18n="resetBg">Reset Background</button>
-                </div>
+                <select id="location-select">
+                    <!-- Options populated by JS -->
+                </select>
             </div>
 
             <div class="control-group">
                 <button class="btn danger" style="width:100%" id="reset-layout" data-i18n="factoryReset">Factory Reset Layout</button>
+            </div>
+        </div>
+
+        <div class="widget-settings-modal" id="widget-settings-modal">
+            <div class="widget-settings-modal-content">
+                <h3 id="settings-modal-title">Widget Settings</h3>
+                
+                <div class="settings-preview" id="settings-preview">
+                    Preview
+                </div>
+
+                <div class="control-group">
+                    <label>Background Color</label>
+                    <input type="color" id="setting-bg-color" style="height:40px; cursor:pointer">
+                </div>
+
+                <div class="control-group">
+                    <label>Border Radius (px)</label>
+                    <input type="range" id="setting-radius" min="0" max="50" value="18" style="width: 100%;">
+                    <span id="radius-val" style="font-size: 0.85rem; color: var(--text-dim);">18px</span>
+                </div>
+
+                <div class="control-group">
+                    <label>Border Style</label>
+                    <select id="setting-border-style">
+                        <option value="solid">Solid</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="dotted">Dotted</option>
+                        <option value="double">Double</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Border Width (px)</label>
+                    <input type="range" id="setting-border-width" min="0" max="15" value="1" step="0.5" style="width: 100%;">
+                    <span id="border-width-val" style="font-size: 0.85rem; color: var(--text-dim);">1px</span>
+                </div>
+
+                <div class="control-group">
+                    <label>Border Color</label>
+                    <input type="color" id="setting-border-color" style="height:40px; cursor:pointer">
+                </div>
+
+                <div class="settings-modal-controls">
+                    <button class="btn-save" id="btn-save-settings">Save</button>
+                    <button class="btn-reset" id="btn-reset-settings">Reset to Default</button>
+                    <button class="btn-save" id="btn-apply-all-settings" style="background: var(--accent); opacity: 0.7;">Apply to All</button>
+                    <button class="btn-close" id="btn-close-settings">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -317,8 +401,7 @@
     <script>
         // --- CONFIGURATION ---
         const CONFIG = {
-            gridSize: 80, gap: 10, inactivityTimeout: 3000,
-            defaultBg: 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=2574&auto=format&fit=crop'
+            gridSize: 80, gap: 10, inactivityTimeout: 3000
         };
 
         const UAE_REGIONS = {
@@ -340,48 +423,43 @@
 
         const FONTS = {
             en: [{ name: 'Inter (Modern)', family: "'Inter', sans-serif" }, { name: 'Playfair Display (Serif)', family: "'Playfair Display', serif" }, { name: 'Montserrat (Geometric)', family: "'Montserrat', sans-serif" }],
-            ar: [{ name: 'Cairo (Modern)', family: "'Cairo', sans-serif" }, { name: 'Tajawal (Geometric)', family: "'Tajawal', sans-serif" }, { name: 'Amiri (Traditional)', family: "'Amiri', serif" }]
+            ar: [{ name: 'كايرو (حديث)', family: "'Cairo', sans-serif" }, { name: 'تجوال (هندسي)', family: "'Tajawal', sans-serif" }, { name: 'أميري (تقليدي)', family: "'Amiri', serif" }]
         };
 
         const TRANSLATIONS = {
             en: {
                 addWidget: "+ Add Widget", editLayout: "Edit Layout", settings: "Settings",
-                selectType: "Select Type", timeWidget: "Time Clock", weatherWidget: "Weather", prayerWidget: "Prayer Times", todoWidget: "To-Do List", notesWidget: "Notes", bookmarkWidget: "Web Bookmark",
+                selectType: "Select Type", timeWidget: "Time Clock", weatherWidget: "Weather", prayerWidget: "Prayer Times", notesWidget: "Notes", todoWidget: "Todo List", searchWidget: "Google Search", bookmarkWidget: "Web Bookmark",
                 title: "Title", icon: "Icon (Emoji)", color: "Color", addToLayout: "Add to Layout",
                 language: "Interface Language", font: "Font Style", theme: "Theme",
                 defaultTheme: "Default (Dark)", forestTheme: "Deep Forest", mistTheme: "Mist Gray", ivoryTheme: "Ivory & Brown",
-                gridSize: "Grid Size", bgImage: "Background Image", resetBg: "Reset Background", applyBg: "Apply Changes",
-                weatherLocation: "Location (Weather & Prayer)", factoryReset: "Factory Reset Layout",
+                gridSize: "Grid Size", weatherLocation: "Location (Weather & Prayer)", factoryReset: "Factory Reset Layout",
+                applyThemeColors: "Apply Theme Colors to Widgets",
                 autoLoc: "Auto Detect (GPS)",
                 fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha",
                 nextPrayer: "Next Prayer", iqamahIn: "Iqamah in", timePassed: "Time since Adhan",
-                todoPlaceholder: "Add task and press Enter..."
+                addTodo: "Add Todo", removeDone: "Remove Completed", confirmRemove: "Remove all checked items?",
+                searchPlaceholder: "Search Google..."
             },
             ar: {
                 addWidget: "+ إضافة ودجت", editLayout: "تعديل التخطيط", settings: "الإعدادات",
-                selectType: "اختر النوع", timeWidget: "ساعة", weatherWidget: "طقس", prayerWidget: "أوقات الصلاة", todoWidget: "قائمة المهام", notesWidget: "ملاحظات", bookmarkWidget: "رابط ويب",
+                selectType: "اختر النوع", timeWidget: "ساعة", weatherWidget: "طقس", prayerWidget: "أوقات الصلاة", notesWidget: "ملاحظات", todoWidget: "قائمة المهام", searchWidget: "بحث جوجل", bookmarkWidget: "رابط ويب",
                 title: "العنوان", icon: "أيقونة (إيموجي)", color: "اللون", addToLayout: "إضافة للتخطيط",
                 language: "لغة الواجهة", font: "نوع الخط", theme: "المظهر",
                 defaultTheme: "الافتراضي (داكن)", forestTheme: "الغابة العميقة", mistTheme: "الضباب الرمادي", ivoryTheme: "عاجي وبني",
-                gridSize: "حجم الشبكة", bgImage: "صورة الخلفية", resetBg: "إعادة تعيين الخلفية", applyBg: "تطبيق التغييرات",
-                weatherLocation: "الموقع (الطقس والصلاة)", factoryReset: "إعادة ضبط المصنع",
+                gridSize: "حجم الشبكة", weatherLocation: "الموقع (الطقس والصلاة)", factoryReset: "إعادة ضبط المصنع",
+                applyThemeColors: "تطبيق ألوان المظهر على الأدوات",
                 autoLoc: "كشف تلقائي (GPS)",
                 fajr: "الفجر", dhuhr: "الظهر", asr: "العصر", maghrib: "المغرب", isha: "العشاء",
                 nextPrayer: "الصلاة القادمة", iqamahIn: "الإقامة بعد", timePassed: "مرّ وقت على الأذان",
-                todoPlaceholder: "أضف مهمة واضغط إنتر..."
+                addTodo: "إضافة مهمة", removeDone: "حذف المكتملة", confirmRemove: "حذف جميع العناصر المكتملة؟",
+                searchPlaceholder: "ابحث في جوجل..."
             }
         };
 
-        // SAFE STORAGE
         const Storage = {
             get: (key) => { try { return localStorage.getItem(key); } catch (e) { return null; } },
-            set: (key, val) => {
-                try { 
-                    localStorage.setItem(key, val); 
-                } catch (e) { 
-                    console.warn("Storage full/failed", e); 
-                }
-            },
+            set: (key, val) => { try { localStorage.setItem(key, val); } catch (e) { console.warn("Storage blocked", e); } },
             remove: (key) => { try { localStorage.removeItem(key); } catch (e) {} }
         };
 
@@ -391,14 +469,12 @@
         const STATE = {
             widgets: [], isEditing: false, dragTarget: null, resizeTarget: null,
             startX: 0, startY: 0, initialLeft: 0, initialTop: 0, initialW: 0, initialH: 0, idleTimer: null,
-            lang: 'en', currentLoc: UAE_REGIONS.abudhabi, geoCache: null,
-            pendingBg: null // For the "Apply" workflow
+            lang: 'en', currentLoc: UAE_REGIONS.abudhabi, geoCache: null
         };
 
         const DOM = {
             container: document.getElementById('widget-container'),
             gridOverlay: document.getElementById('grid-overlay'),
-            bg: document.getElementById('bg-layer'),
             uiLayer: document.getElementById('ui-layer'),
             editBtn: document.getElementById('toggle-edit'),
             settingsBtn: document.getElementById('open-settings'),
@@ -410,11 +486,9 @@
             langSelect: document.getElementById('ui-language'),
             fontSelect: document.getElementById('ui-font'),
             themeSelect: document.getElementById('ui-theme'),
-            locSelect: document.getElementById('location-select'),
-            applyBgBtn: document.getElementById('apply-bg')
+            locSelect: document.getElementById('location-select')
         };
 
-        // --- GEOLOCATION HELPER ---
         function detectLocationAndInitialize() {
             if (!navigator.geolocation) return;
             navigator.geolocation.getCurrentPosition(
@@ -455,6 +529,17 @@
             Storage.set('widget_theme', themeKey);
         }
 
+        function updateLocationDropdown(lang) {
+            DOM.locSelect.innerHTML = '';
+            UAE_LOCATIONS.forEach((loc) => {
+                const opt = document.createElement('option'); 
+                opt.value = loc.id;
+                opt.innerText = (lang === 'ar' && loc.arName) ? loc.arName : loc.name;
+                if(loc.id === STATE.currentLoc.id) opt.selected = true;
+                DOM.locSelect.appendChild(opt);
+            });
+        }
+
         function updateLanguage(lang) {
             STATE.lang = lang;
             document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
@@ -473,17 +558,23 @@
                 document.documentElement.style.setProperty('--font-stack', savedFont);
             }
 
-            DOM.locSelect.innerHTML = '';
-            UAE_LOCATIONS.forEach((loc, index) => {
-                const opt = document.createElement('option'); opt.value = loc.id;
-                opt.innerText = (lang === 'ar' && loc.arName) ? loc.arName : loc.name;
-                if(loc.id === STATE.currentLoc.id) opt.selected = true;
-                DOM.locSelect.appendChild(opt);
+            updateLocationDropdown(lang);
+            
+            STATE.widgets.forEach(w => {
+                // Immediate UI Update
+                if(w.type === 'prayer' || w.type === 'notes' || w.type === 'todo' || w.type === 'google-search') w.refreshUI();
+                // Data Update
+                w.refreshData();
             });
             
-            // Refresh ALL widgets
-            STATE.widgets.forEach(w => w.refreshData());
+            // Primary persistence method
             Storage.set('widget_lang', lang);
+            // Alternative persistence method using sessionStorage as backup
+            try {
+                sessionStorage.setItem('widget_lang_backup', lang);
+            } catch(e) {
+                console.warn("Session storage unavailable");
+            }
         }
 
         // --- WIDGET CLASSES ---
@@ -501,14 +592,16 @@
                 this.el.id = this.id;
                 const handle = document.createElement('div'); handle.className = 'widget-drag-handle'; handle.addEventListener('mousedown', (e) => startDrag(e, this));
                 const resizer = document.createElement('div'); resizer.className = 'widget-resize-handle'; resizer.addEventListener('mousedown', (e) => startResize(e, this));
+                const settingsBtn = document.createElement('button'); settingsBtn.className = 'widget-settings-btn'; settingsBtn.innerHTML = '⚙️'; settingsBtn.onclick = () => SettingsManager.open(this);
                 const controls = document.createElement('div'); controls.className = 'widget-controls';
                 const closeBtn = document.createElement('button'); closeBtn.className = 'mini-btn'; closeBtn.innerHTML = '×'; closeBtn.onclick = () => removeWidget(this.id); controls.appendChild(closeBtn);
                 const content = document.createElement('div'); content.className = 'widget-content';
                 this.updateContent(content);
-                this.el.appendChild(handle); this.el.appendChild(resizer); this.el.appendChild(controls); this.el.appendChild(content);
+                this.el.appendChild(handle); this.el.appendChild(resizer); this.el.appendChild(settingsBtn); this.el.appendChild(controls); this.el.appendChild(content);
                 DOM.container.appendChild(this.el);
                 this.updateStyle();
                 this.refreshData();
+                this.loadCustomStyles();
             }
             updateStyle() {
                 const px = (val) => val * CONFIG.gridSize;
@@ -516,6 +609,7 @@
                 this.el.style.height = `calc(${px(this.h)}px - ${CONFIG.gap}px)`;
                 this.el.style.left = `${px(this.x) + (CONFIG.gap/2)}px`;
                 this.el.style.top = `${px(this.y) + (CONFIG.gap/2)}px`;
+                // Restore transitions for smooth theme changes when not resizing
                 this.el.style.transition = 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, background-color 0.2s';
                 this.el.setAttribute('data-width', this.w);
                 this.el.setAttribute('data-height', this.h);
@@ -523,12 +617,41 @@
             }
             updateContent(container) {}
             refreshData() {}
+            refreshUI() {} // For immediate text updates
+            loadCustomStyles() {
+                const styles = Storage.get(`widget_style_${this.id}`);
+                if(styles) {
+                    const parsed = JSON.parse(styles);
+                    this.customStyles = parsed;
+                    this.applyStyles();
+                }
+            }
+            applyStyles() {
+                if(!this.customStyles) return;
+                if(this.customStyles.bg) this.el.style.setProperty('--widget-bg', this.customStyles.bg);
+                if(this.customStyles.radius !== undefined) this.el.style.setProperty('--widget-radius', this.customStyles.radius + 'px');
+                if(this.customStyles.borderWidth !== undefined && this.customStyles.borderStyle !== undefined && this.customStyles.borderColor) {
+                    this.el.style.setProperty('--widget-border', `${this.customStyles.borderWidth}px ${this.customStyles.borderStyle} ${this.customStyles.borderColor}`);
+                }
+            }
+            saveCustomStyles(styles) {
+                this.customStyles = styles;
+                Storage.set(`widget_style_${this.id}`, JSON.stringify(styles));
+                this.applyStyles();
+            }
+            resetCustomStyles() {
+                Storage.remove(`widget_style_${this.id}`);
+                this.customStyles = null;
+                this.el.style.removeProperty('--widget-bg');
+                this.el.style.removeProperty('--widget-radius');
+                this.el.style.removeProperty('--widget-border');
+            }
         }
 
         class TimeWidget extends Widget {
             constructor(...args) {
                 super(...args);
-                this.minW = 3; this.minH = 2;
+                this.minW = 3; this.minH = 2; // Slightly relaxed
             }
             updateContent(container) {
                 const time = document.createElement('h1'); time.className = 'time-display';
@@ -538,21 +661,7 @@
             }
             refreshData() {
                 const now = new Date();
-                let timeString = "";
-                
-                // FIX: Arabic 12h Manual Formatting
-                if (STATE.lang === 'ar') {
-                    let h = now.getHours();
-                    const m = now.getMinutes();
-                    const ampm = h >= 12 ? 'م' : 'ص';
-                    h = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-                    const min = m < 10 ? '0'+m : m;
-                    timeString = `${h}:${min} ${ampm}`;
-                } else {
-                    timeString = now.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', hour12: true});
-                }
-
-                this.contentRef.time.innerText = timeString;
+                this.contentRef.time.innerText = now.toLocaleTimeString(STATE.lang === 'ar' ? 'ar-UAE' : 'en-US', {hour: '2-digit', minute:'2-digit'});
                 this.contentRef.date.innerText = now.toLocaleDateString(STATE.lang === 'ar' ? 'ar-UAE' : 'en-US', {weekday: 'long', month: 'short', day: 'numeric'});
             }
         }
@@ -597,30 +706,26 @@
                 this.minW = 3; this.minH = 3;
             }
             updateContent(container) {
-                const hijri = document.createElement('div'); hijri.className = 'hijri-date'; hijri.id = `hijri-${this.id}`;
                 const header = document.createElement('div'); header.className = 'prayer-header';
                 const list = document.createElement('div'); list.className = 'prayer-list'; list.id = `plist-${this.id}`;
                 const progress = document.createElement('div'); progress.className = 'prayer-progress';
                 const bar = document.createElement('div'); bar.className = 'prayer-bar'; bar.id = `pbar-${this.id}`;
                 const nextLabel = document.createElement('div'); nextLabel.className = 'next-prayer-label'; nextLabel.id = `plabel-${this.id}`;
                 progress.appendChild(bar);
-                container.appendChild(hijri); container.appendChild(header); container.appendChild(list); container.appendChild(progress); container.appendChild(nextLabel);
-                this.contentRef = { header, list, bar, nextLabel, hijri };
+                container.appendChild(header); container.appendChild(list); container.appendChild(progress); container.appendChild(nextLabel);
+                this.contentRef = { header, list, bar, nextLabel };
+                this.refreshUI();
+            }
+            refreshUI() { 
+                if(this.contentRef.header) this.contentRef.header.innerText = TRANSLATIONS[STATE.lang].prayerWidget; 
             }
             refreshData() {
                 let lat = STATE.currentLoc.lat;
                 let lon = STATE.currentLoc.lon;
                 if (STATE.currentLoc.id === 'auto' && STATE.geoCache) { lat = STATE.geoCache.lat; lon = STATE.geoCache.lon; }
                 if (!lat || !lon) return;
-
-                // Update Hijri
-                const now = new Date();
-                const hijriDate = new Intl.DateTimeFormat(STATE.lang === 'ar' ? 'ar-SA-u-ca-islamic' : 'en-US-u-ca-islamic', { dateStyle: 'long', calendar: 'islamic' }).format(now);
-                if(this.contentRef.hijri) this.contentRef.hijri.innerText = hijriDate;
-
-                const dateStr = `${now.getDate()}-${now.getMonth()+1}-${now.getFullYear()}`;
-                const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lon}&method=17`;
-
+                const date = new Date();
+                const url = `https://api.aladhan.com/v1/timings/${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}?latitude=${lat}&longitude=${lon}&method=17`;
                 fetch(url).then(res => res.json()).then(data => {
                     if(data.code === 200) {
                         this.renderPrayers(data.data.timings);
@@ -632,23 +737,11 @@
                 const keys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
                 const t = TRANSLATIONS[STATE.lang];
                 const map = { 'Fajr': t.fajr, 'Dhuhr': t.dhuhr, 'Asr': t.asr, 'Maghrib': t.maghrib, 'Isha': t.isha };
-                
-                // FIX: Clear list to prevent English text lingering
-                this.contentRef.list.innerHTML = '';
-
+                let html = '';
                 keys.forEach(k => {
-                    let timeStr = timings[k];
-                    if(timeStr.includes(':')) {
-                        const [h, m] = timeStr.split(':').map(Number);
-                        const suffix = h >= 12 ? 'PM' : 'AM';
-                        const h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-                        timeStr = `${h12}:${m < 10 ? '0'+m : m} ${suffix}`;
-                    }
-                    this.contentRef.list.innerHTML += `<div class="prayer-row" id="row-${this.id}-${k}"><span>${map[k]}</span><span>${timeStr}</span></div>`;
+                    html += `<div class="prayer-row" id="row-${this.id}-${k}"><span>${map[k]}</span><span>${timings[k]}</span></div>`;
                 });
-                
-                // Update header translation
-                this.contentRef.header.innerText = TRANSLATIONS[STATE.lang].prayerWidget;
+                this.contentRef.list.innerHTML = html;
             }
             startTimer(timings) {
                 if(this.timerInterval) clearInterval(this.timerInterval);
@@ -656,34 +749,24 @@
                     const now = new Date();
                     const nowTime = now.getHours() * 60 + now.getMinutes();
                     const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-                    
-                    // FIX: Initialize properly
-                    let nextPrayer = 'Fajr';
-                    let nextTimeDiff = 1440; // Default to max mins (approx 24h)
-                    
+                    let nextPrayer = 'Fajr', nextTimeDiff = 1440; 
                     for(let p of prayers) {
                         const [h, m] = timings[p].split(':').map(Number);
                         const pTime = h * 60 + m;
                         if(pTime > nowTime && pTime < nextTimeDiff) { nextTimeDiff = pTime - nowTime; nextPrayer = p; }
                     }
-                    
-                    // Highlight Active
                     document.querySelectorAll(`[id^="row-${this.id}"]`).forEach(el => el.classList.remove('active'));
                     const activeRow = document.getElementById(`row-${this.id}-${nextPrayer}`);
                     if(activeRow) activeRow.classList.add('active');
-
-                    // Progress Bar & Label Logic
                     let prevPrayer = null, prevTime = 0;
                     for(let i=0; i<prayers.length; i++) {
                         const [h, m] = timings[prayers[i]].split(':').map(Number);
                         const pTime = h * 60 + m;
                         if(pTime < nowTime) { prevPrayer = prayers[i]; prevTime = pTime; }
                     }
-                    
                     const t = TRANSLATIONS[STATE.lang];
                     const bar = this.contentRef.bar;
                     const label = this.contentRef.nextLabel;
-
                     if(prevPrayer) {
                         const timeSince = nowTime - prevTime;
                         if(timeSince <= 30) {
@@ -692,110 +775,17 @@
                             label.innerText = `${t.iqamahIn} ${30 - timeSince}m`;
                         } else {
                             bar.style.width = '100%'; bar.style.opacity = '0.3';
-                            
-                            // Hours Logic
-                            let timeString = `${nextTimeDiff}m`;
-                            if(nextTimeDiff > 60) {
-                                const hours = Math.floor(nextTimeDiff / 60);
-                                const mins = nextTimeDiff % 60;
-                                timeString = `${hours}h ${mins}m`;
+                            if(nextTimeDiff <= 60) {
+                                label.innerText = `${t.nextPrayer}: ${nextPrayer} (${nextTimeDiff}m)`;
+                            } else {
+                                label.innerText = `${t.nextPrayer}: ${nextPrayer}`;
                             }
-                            
-                            // Use translation for the prayer name
-                            label.innerText = `${t.nextPrayer}: ${TRANSLATIONS[STATE.lang][nextPrayer.toLowerCase()]} (${timeString})`;
                         }
                     } else {
-                         bar.style.width = '0%'; 
-                         label.innerText = `${t.nextPrayer}: Fajr`;
-                    }
-                    
-                    // Refresh Hijri
-                    if(now.getSeconds() === 0) {
-                        const hijriDate = new Intl.DateTimeFormat(STATE.lang === 'ar' ? 'ar-SA-u-ca-islamic' : 'en-US-u-ca-islamic', { dateStyle: 'long', calendar: 'islamic' }).format(now);
-                        if(this.contentRef.hijri) this.contentRef.hijri.innerText = hijriDate;
+                         bar.style.width = '0%'; label.innerText = `${t.nextPrayer}: Fajr`;
                     }
                 };
                 update(); this.timerInterval = setInterval(update, 1000);
-            }
-        }
-
-        class ToDoWidget extends Widget {
-            constructor(...args) {
-                super(...args);
-                this.minW = 3; this.minH = 3;
-            }
-            updateContent(container) {
-                // Container for list
-                const list = document.createElement('div');
-                list.className = 'todo-container';
-                list.id = `todo-list-${this.id}`;
-                this.contentRef = { list };
-                
-                // Input Area
-                const input = document.createElement('input');
-                input.className = 'todo-input';
-                input.placeholder = TRANSLATIONS[STATE.lang].todoPlaceholder;
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.addTodoItem(input.value);
-                        input.value = '';
-                    }
-                });
-                container.appendChild(input);
-                container.appendChild(list);
-            }
-            
-            addTodoItem(text) {
-                if(!text.trim()) return;
-                const item = { id: Date.now() + Math.random(), text: text, done: false };
-                this.data.items = this.data.items || [];
-                this.data.items.push(item);
-                this.renderList();
-                saveLayout();
-            }
-
-            toggleItem(id) {
-                const item = this.data.items.find(i => i.id === id);
-                if(item) {
-                    item.done = !item.done;
-                    this.renderList();
-                    saveLayout();
-                }
-            }
-
-            renderList() {
-                this.contentRef.list.innerHTML = '';
-                if(!this.data.items) return;
-
-                this.data.items.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = `todo-item ${item.done ? 'done' : ''}`;
-                    div.onclick = () => this.toggleItem(item.id);
-
-                    const check = document.createElement('div');
-                    check.className = 'todo-check';
-                    const span = document.createElement('span');
-                    span.innerText = item.text;
-
-                    if (STATE.lang === 'rtl') {
-                        div.appendChild(span);
-                        div.appendChild(check);
-                    } else {
-                        div.appendChild(check);
-                        div.appendChild(span);
-                    }
-                    this.contentRef.list.appendChild(div);
-                });
-            }
-
-            refreshData() {
-                // Update placeholder
-                const input = this.el.querySelector('.todo-input');
-                if(input) input.placeholder = TRANSLATIONS[STATE.lang].todoPlaceholder;
-                
-                // Re-render list to ensure it's populated
-                this.renderList();
             }
         }
 
@@ -813,11 +803,179 @@
                 this.contentRef = { area }; 
                 container.appendChild(area);
             }
-            refreshData() {
-                if(this.contentRef.area) {
+            refreshUI() {
+                 if(this.contentRef.area) {
                     this.contentRef.area.placeholder = STATE.lang === 'ar' ? "اكتب ملاحظاتك هنا..." : "Type your notes here...";
                 }
             }
+            refreshData() {} // Placeholder updated in refreshUI
+        }
+
+        class TodoWidget extends Widget {
+            constructor(...args) {
+                super(...args);
+                this.minW = 2; this.minH = 2;
+                this.data.items = this.data.items || [];
+            }
+            updateContent(container) {
+                // Input container
+                const inputContainer = document.createElement('div');
+                inputContainer.className = 'todo-input-container';
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'todo-input';
+                input.placeholder = STATE.lang === 'ar' ? "أضف مهمة جديدة..." : "Add a new todo...";
+                
+                const addBtn = document.createElement('button');
+                addBtn.className = 'todo-add-btn';
+                addBtn.innerText = STATE.lang === 'ar' ? "إضافة" : "Add";
+                addBtn.onclick = () => this.addTodoItem(input.value);
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addTodoItem(input.value);
+                });
+                
+                inputContainer.appendChild(input);
+                inputContainer.appendChild(addBtn);
+                
+                // Todo list container
+                const listContainer = document.createElement('div');
+                listContainer.className = 'todo-list';
+                listContainer.id = `todo-list-${this.id}`;
+                
+                // Remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'todo-remove-btn';
+                removeBtn.innerText = STATE.lang === 'ar' ? "حذف المكتملة" : "Remove Completed";
+                removeBtn.onclick = () => this.removeCompletedItems();
+                
+                container.appendChild(inputContainer);
+                container.appendChild(listContainer);
+                container.appendChild(removeBtn);
+                
+                this.contentRef = { input, listContainer, addBtn, removeBtn };
+                this.renderTodoList();
+            }
+            addTodoItem(text) {
+                if (!text.trim()) return;
+                const item = {
+                    id: Date.now(),
+                    text: text.trim(),
+                    completed: false
+                };
+                this.data.items.push(item);
+                this.contentRef.input.value = '';
+                this.renderTodoList();
+                saveLayout();
+            }
+            removeTodoItem(id) {
+                const idx = this.data.items.findIndex(item => item.id === id);
+                if (idx > -1) {
+                    this.data.items.splice(idx, 1);
+                    this.renderTodoList();
+                    saveLayout();
+                }
+            }
+            toggleTodoItem(id) {
+                const item = this.data.items.find(item => item.id === id);
+                if (item) {
+                    item.completed = !item.completed;
+                    this.renderTodoList();
+                    saveLayout();
+                }
+            }
+            removeCompletedItems() {
+                const hasCompleted = this.data.items.some(item => item.completed);
+                if (!hasCompleted) return;
+                const msg = STATE.lang === 'ar' ? "حذف جميع العناصر المكتملة؟" : "Remove all checked items?";
+                if (confirm(msg)) {
+                    this.data.items = this.data.items.filter(item => !item.completed);
+                    this.renderTodoList();
+                    saveLayout();
+                }
+            }
+            renderTodoList() {
+                const list = this.contentRef.listContainer;
+                list.innerHTML = '';
+                this.data.items.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = `todo-item ${item.completed ? 'completed' : ''}`;
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'todo-checkbox';
+                    checkbox.checked = item.completed;
+                    checkbox.onchange = () => this.toggleTodoItem(item.id);
+                    
+                    const text = document.createElement('span');
+                    text.className = 'todo-text';
+                    text.innerText = item.text;
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.style.cssText = 'background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;';
+                    deleteBtn.onclick = () => this.removeTodoItem(item.id);
+                    
+                    itemEl.appendChild(checkbox);
+                    itemEl.appendChild(text);
+                    itemEl.appendChild(deleteBtn);
+                    list.appendChild(itemEl);
+                });
+            }
+            refreshUI() {
+                if(this.contentRef.input) {
+                    this.contentRef.input.placeholder = STATE.lang === 'ar' ? "أضف مهمة جديدة..." : "Add a new todo...";
+                }
+                if(this.contentRef.addBtn) {
+                    this.contentRef.addBtn.innerText = STATE.lang === 'ar' ? "إضافة" : "Add";
+                }
+                if(this.contentRef.removeBtn) {
+                    this.contentRef.removeBtn.innerText = STATE.lang === 'ar' ? "حذف المكتملة" : "Remove Completed";
+                }
+                this.renderTodoList();
+            }
+            refreshData() {}
+        }
+
+        class GoogleSearchWidget extends Widget {
+            constructor(...args) {
+                super(...args);
+                this.minW = 3; this.minH = 1;
+            }
+            updateContent(container) {
+                const searchContainer = document.createElement('div');
+                searchContainer.className = 'google-search-container';
+                
+                const logo = document.createElement('img');
+                logo.className = 'google-logo';
+                logo.src = 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/google-color.png';
+                logo.alt = 'Google';
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'google-search-input';
+                input.placeholder = STATE.lang === 'ar' ? "ابحث في جوجل..." : "Search Google...";
+                
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && input.value.trim()) {
+                        const query = encodeURIComponent(input.value);
+                        window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                        input.value = '';
+                    }
+                });
+                
+                searchContainer.appendChild(logo);
+                searchContainer.appendChild(input);
+                container.appendChild(searchContainer);
+                
+                this.contentRef = { input, logo };
+            }
+            refreshUI() {
+                if(this.contentRef.input) {
+                    this.contentRef.input.placeholder = STATE.lang === 'ar' ? "ابحث في جوجل..." : "Search Google...";
+                }
+            }
+            refreshData() {}
         }
 
         class BookmarkWidget extends Widget {
@@ -832,6 +990,7 @@
                 const content = document.createElement('div'); content.className = 'widget-content';
                 this.updateContent(content); this.el.appendChild(content);
                 const controls = document.createElement('div'); controls.className = 'widget-controls';
+                const settingsBtn = document.createElement('button'); settingsBtn.className = 'widget-settings-btn'; settingsBtn.innerHTML = '⚙️'; settingsBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); SettingsManager.open(this); }; controls.appendChild(settingsBtn);
                 const closeBtn = document.createElement('button'); closeBtn.className = 'mini-btn'; closeBtn.innerHTML = '×';
                 closeBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); removeWidget(this.id); }; controls.appendChild(closeBtn);
                 const handle = document.createElement('div'); handle.className = 'widget-drag-handle'; handle.addEventListener('mousedown', (e) => { e.preventDefault(); startDrag(e, this); });
@@ -839,6 +998,7 @@
                 this.el.appendChild(handle); this.el.appendChild(resizer); this.el.appendChild(controls);
                 DOM.container.appendChild(this.el);
                 this.updateStyle();
+                this.loadCustomStyles();
             }
             updateContent(container) {
                 const icon = document.createElement('div'); icon.className = 'bookmark-icon';
@@ -860,6 +1020,109 @@
             const r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex.substr(3, 2), 16), b = parseInt(hex.substr(5, 2), 16);
             return ((r * 299 + g * 587 + b * 114) / 1000) > 155;
         }
+
+        const SettingsManager = {
+            currentWidget: null,
+            rgbaToHex(rgba) {
+                if(rgba.startsWith('#')) return rgba.substring(0, 7);
+                const match = rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if(!match) return '#ffffff';
+                const r = parseInt(match[1]).toString(16).padStart(2, '0');
+                const g = parseInt(match[2]).toString(16).padStart(2, '0');
+                const b = parseInt(match[3]).toString(16).padStart(2, '0');
+                return `#${r}${g}${b}`;
+            },
+            open(widget) {
+                this.currentWidget = widget;
+                const modal = document.getElementById('widget-settings-modal');
+                document.getElementById('settings-modal-title').innerText = `${widget.type.charAt(0).toUpperCase() + widget.type.slice(1)} Settings`;
+                
+                const bgColor = document.getElementById('setting-bg-color');
+                const radius = document.getElementById('setting-radius');
+                const borderStyle = document.getElementById('setting-border-style');
+                const borderWidth = document.getElementById('setting-border-width');
+                const borderColor = document.getElementById('setting-border-color');
+                
+                if(widget.customStyles) {
+                    bgColor.value = widget.customStyles.bg || '#1e1e1e';
+                    radius.value = widget.customStyles.radius || 18;
+                    borderStyle.value = widget.customStyles.borderStyle || 'solid';
+                    borderWidth.value = widget.customStyles.borderWidth || 1;
+                    borderColor.value = this.rgbaToHex(widget.customStyles.borderColor || '#ffffff');
+                } else {
+                    const computed = getComputedStyle(widget.el);
+                    const bgVal = computed.getPropertyValue('--widget-bg').trim() || computed.backgroundColor;
+                    const radiusVal = computed.borderRadius || '18px';
+                    const borderVal = computed.getPropertyValue('--widget-border').trim() || computed.border;
+                    
+                    bgColor.value = this.rgbaToHex(bgVal || '#1e1e1e');
+                    radius.value = parseInt(radiusVal) || 18;
+                    
+                    if(borderVal) {
+                        const borderParts = borderVal.split(' ');
+                        borderWidth.value = parseInt(borderParts[0]) || 1;
+                        borderStyle.value = borderParts[1] || 'solid';
+                        borderColor.value = this.rgbaToHex(borderParts[2] || '#ffffff');
+                    } else {
+                        borderWidth.value = 1;
+                        borderStyle.value = 'solid';
+                        borderColor.value = '#ffffff';
+                    }
+                }
+                
+                this.updatePreview();
+                modal.classList.add('active');
+                showUI();
+            },
+            updatePreview() {
+                const preview = document.getElementById('settings-preview');
+                const radius = document.getElementById('setting-radius').value;
+                const bgColor = document.getElementById('setting-bg-color').value;
+                const borderWidth = document.getElementById('setting-border-width').value;
+                const borderStyle = document.getElementById('setting-border-style').value;
+                const borderColor = document.getElementById('setting-border-color').value;
+                
+                preview.style.borderRadius = radius + 'px';
+                preview.style.backgroundColor = bgColor;
+                preview.style.border = `${borderWidth}px ${borderStyle} ${borderColor}`;
+                preview.innerText = `Preview (${radius}px, ${borderWidth}px ${borderStyle})`;
+                
+                document.getElementById('radius-val').innerText = radius + 'px';
+                document.getElementById('border-width-val').innerText = borderWidth + 'px';
+            },
+            save() {
+                const styles = {
+                    bg: document.getElementById('setting-bg-color').value,
+                    radius: parseInt(document.getElementById('setting-radius').value),
+                    borderStyle: document.getElementById('setting-border-style').value,
+                    borderWidth: parseInt(document.getElementById('setting-border-width').value),
+                    borderColor: document.getElementById('setting-border-color').value
+                };
+                this.currentWidget.saveCustomStyles(styles);
+                this.close();
+            },
+            applyToAll() {
+                const styles = {
+                    bg: document.getElementById('setting-bg-color').value,
+                    radius: parseInt(document.getElementById('setting-radius').value),
+                    borderStyle: document.getElementById('setting-border-style').value,
+                    borderWidth: parseInt(document.getElementById('setting-border-width').value),
+                    borderColor: document.getElementById('setting-border-color').value
+                };
+                STATE.widgets.forEach(widget => {
+                    widget.saveCustomStyles(styles);
+                });
+                this.close();
+            },
+            reset() {
+                this.currentWidget.resetCustomStyles();
+                this.close();
+            },
+            close() {
+                document.getElementById('widget-settings-modal').classList.remove('active');
+                this.currentWidget = null;
+            }
+        };
 
         async function fetchWeather(query, widgetInstance) {
             try {
@@ -898,12 +1161,13 @@
             }
         }
 
-        // --- INTERACTION LOGIC ---
+        // --- INTERACTION LOGIC (FLUID RESIZE) ---
 
         function startDrag(e, widget) {
             if (!STATE.isEditing) return; e.preventDefault(); e.stopPropagation();
             STATE.dragTarget = widget; STATE.startX = e.clientX; STATE.startY = e.clientY;
             STATE.initialLeft = parseFloat(widget.el.style.left); STATE.initialTop = parseFloat(widget.el.style.top);
+            // Remove transition for instant movement
             widget.el.style.transition = 'none';
             DOM.container.appendChild(widget.el); 
         }
@@ -912,14 +1176,17 @@
             if (!STATE.isEditing) return; e.preventDefault(); e.stopPropagation();
             STATE.resizeTarget = widget;
             STATE.startX = e.clientX; STATE.startY = e.clientY;
-            STATE.initialLeft = parseFloat(widget.el.style.left); STATE.initialTop = parseFloat(widget.el.style.top);
+            STATE.initialLeft = parseFloat(widget.el.style.left);
+            STATE.initialTop = parseFloat(widget.el.style.top);
             
+            // Get initial pixel width/height
             const rect = widget.el.getBoundingClientRect();
             STATE.initialPixelW = rect.width;
             STATE.initialPixelH = rect.height;
             STATE.initialW = widget.w;
             STATE.initialH = widget.h;
 
+            // Disable transition for fluid feel
             widget.el.style.transition = 'none';
         }
 
@@ -933,12 +1200,15 @@
             if (STATE.resizeTarget) {
                 const dx = e.clientX - STATE.startX; const dy = e.clientY - STATE.startY;
                 
-                let newPixelW = Math.max(CONFIG.gridSize, STATE.initialPixelW + dx);
+                // 1. FLUID VISUAL UPDATE (Follow mouse pixels)
+                let newPixelW = Math.max(CONFIG.gridSize, STATE.initialPixelW + dx); // Min 1 grid cell
                 let newPixelH = Math.max(CONFIG.gridSize, STATE.initialPixelH + dy);
                 
                 STATE.resizeTarget.el.style.width = `${newPixelW}px`;
                 STATE.resizeTarget.el.style.height = `${newPixelH}px`;
 
+                // 2. LOGICAL GRID UPDATE (For internal state snapping later)
+                // Calculate new grid units roughly for data tracking
                 const dw = Math.round(dx / CONFIG.gridSize);
                 const dh = Math.round(dy / CONFIG.gridSize);
                 let newW = Math.max(STATE.resizeTarget.minW, STATE.initialW + dw);
@@ -960,48 +1230,31 @@
                 STATE.dragTarget.updateStyle(); STATE.dragTarget = null; saveLayout();
             }
             if (STATE.resizeTarget) {
-                STATE.resizeTarget.updateStyle();
+                // SNAP TO GRID
+                STATE.resizeTarget.updateStyle(); // This snaps the CSS to the final grid units
                 STATE.resizeTarget = null; saveLayout();
             }
         });
 
         // --- INITIALIZATION ---
-
         function init() {
             try {
-                // 1. Load Theme & Language First
                 const savedTheme = Storage.get('widget_theme') || 'default';
                 DOM.themeSelect.value = savedTheme; applyTheme(savedTheme);
 
-                const savedLang = Storage.get('widget_lang') || 'en';
-                STATE.lang = savedLang; 
-                DOM.langSelect.value = savedLang;
+                // Primary: localStorage, Fallback: sessionStorage, Default: 'en'
+                let savedLang = Storage.get('widget_lang');
+                if (!savedLang) {
+                    try {
+                        savedLang = sessionStorage.getItem('widget_lang_backup');
+                    } catch(e) {
+                        savedLang = null;
+                    }
+                }
+                savedLang = savedLang || 'en';
+                DOM.langSelect.value = savedLang; 
                 updateLanguage(savedLang);
 
-                // 2. Load Background
-                const savedBg = Storage.get('widget_bg');
-                // FIX: Apply immediately if saved, else default
-                DOM.bg.style.backgroundImage = savedBg ? `url('${savedBg}')` : `url('${CONFIG.defaultBg}')`;
-                
-                // 3. Populate Location Dropdown
-                DOM.locSelect.innerHTML = '';
-                UAE_LOCATIONS.forEach((loc, index) => {
-                    const opt = document.createElement('option'); opt.value = loc.id;
-                    opt.innerText = (STATE.lang === 'ar' && loc.arName) ? loc.arName : loc.name;
-                    if(loc.id === STATE.currentLoc.id) opt.selected = true;
-                    DOM.locSelect.appendChild(opt);
-                });
-
-                // 4. Load Layout or Default
-                const savedLayout = Storage.get('widget_layout');
-                if (savedLayout) {
-                    try {
-                        const parsed = JSON.parse(savedLayout);
-                        parsed.forEach(wData => createWidgetFromData(wData));
-                    } catch(e) { console.error("Layout corrupt", e); setupDefaultLayout(); }
-                } else { setupDefaultLayout(); }
-
-                // 5. Geo
                 const savedLoc = Storage.get('widget_loc');
                 if(savedLoc) {
                     const locObj = UAE_LOCATIONS.find(l => l.id === savedLoc);
@@ -1010,6 +1263,14 @@
                 try { detectLocationAndInitialize(); } catch(e) { console.warn("Geo init failed", e); }
 
                 DOM.gridOverlay.style.setProperty('--cell-size', CONFIG.gridSize + 'px');
+
+                const savedLayout = Storage.get('widget_layout');
+                if (savedLayout) {
+                    try {
+                        const parsed = JSON.parse(savedLayout);
+                        parsed.forEach(wData => createWidgetFromData(wData));
+                    } catch(e) { console.error("Layout corrupt", e); setupDefaultLayout(); }
+                } else { setupDefaultLayout(); }
 
                 setInterval(() => STATE.widgets.forEach(w => w.refreshData()), 60000);
                 document.addEventListener('mousemove', showUI); document.addEventListener('click', showUI);
@@ -1027,8 +1288,9 @@
                 case 'time': w = new TimeWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
                 case 'weather': w = new WeatherWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
                 case 'prayer': w = new PrayerWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
-                case 'todo': w = new ToDoWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
                 case 'notes': w = new NotesWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
+                case 'todo': w = new TodoWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
+                case 'google-search': w = new GoogleSearchWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
                 case 'bookmark': w = new BookmarkWidget(data.id, data.type, data.x, data.y, data.w, data.h, data.data); break;
                 default: w = new Widget(data.id, data.type, data.x, data.y, data.w, data.h, data.data);
             }
@@ -1039,8 +1301,7 @@
             const timeW = new TimeWidget('w_time_def', 'time', 2, 2, 4, 4);
             const weatherW = new WeatherWidget('w_weather_def', 'weather', 8, 2, 3, 4);
             const prayerW = new PrayerWidget('w_prayer_def', 'prayer', 2, 7, 4, 5);
-            const todoW = new ToDoWidget('w_todo_def', 'todo', 2, 6, 3, 3);
-            STATE.widgets.push(timeW, weatherW, prayerW, todoW);
+            STATE.widgets.push(timeW, weatherW, prayerW);
             saveLayout();
         }
 
@@ -1080,6 +1341,17 @@
             DOM.settingsPanel.classList.toggle('active'); DOM.addWidgetPanel.classList.remove('active'); showUI();
         };
 
+        document.getElementById('setting-bg-color').oninput = () => SettingsManager.updatePreview();
+        document.getElementById('setting-radius').oninput = () => SettingsManager.updatePreview();
+        document.getElementById('setting-border-style').onchange = () => SettingsManager.updatePreview();
+        document.getElementById('setting-border-width').oninput = () => SettingsManager.updatePreview();
+        document.getElementById('setting-border-color').oninput = () => SettingsManager.updatePreview();
+        document.getElementById('btn-save-settings').onclick = () => SettingsManager.save();
+        document.getElementById('btn-reset-settings').onclick = () => { if(confirm("Reset to default appearance?")) SettingsManager.reset(); };
+        document.getElementById('btn-apply-all-settings').onclick = () => SettingsManager.applyToAll();
+        document.getElementById('btn-close-settings').onclick = () => SettingsManager.close();
+        document.getElementById('widget-settings-modal').onclick = (e) => { if(e.target.id === 'widget-settings-modal') SettingsManager.close(); };
+
         document.getElementById('new-widget-type').onchange = (e) => {
             const val = e.target.value;
             document.querySelectorAll('.dynamic-form').forEach(el => el.classList.remove('active'));
@@ -1093,8 +1365,9 @@
             if (type === 'time') { w = 4; h = 4; }
             if (type === 'weather') { w = 3; h = 4; }
             if (type === 'prayer') { w = 4; h = 5; }
-            if (type === 'todo') { w = 3; h = 3; data.items = []; }
             if (type === 'notes') { w = 3; h = 4; }
+            if (type === 'todo') { w = 3; h = 4; data.items = []; }
+            if (type === 'google-search') { w = 4; h = 2; }
             if (type === 'bookmark') {
                 w = 2; h = 2;
                 data.title = document.getElementById('bm-title').value || "Link";
@@ -1115,49 +1388,25 @@
             STATE.widgets.forEach(w => w.updateStyle()); saveLayout(); 
         };
         DOM.themeSelect.onchange = (e) => applyTheme(e.target.value);
+        document.getElementById('apply-theme-colors').onclick = () => {
+            const currentTheme = DOM.themeSelect.value;
+            const themeData = THEMES[currentTheme];
+            const styles = {
+                bg: themeData.glass,
+                radius: 18,
+                borderStyle: 'solid',
+                borderWidth: 1,
+                borderColor: themeData.border
+            };
+            STATE.widgets.forEach(widget => {
+                widget.saveCustomStyles(styles);
+            });
+        };
         DOM.langSelect.onchange = (e) => updateLanguage(e.target.value);
         DOM.fontSelect.onchange = (e) => {
             document.documentElement.style.setProperty('--font-stack', e.target.value); Storage.set('widget_font', e.target.value);
         };
         DOM.locSelect.onchange = handleLocationChange;
-
-        // --- BACKGROUND WORKFLOW ---
-
-        // 1. User Uploads Image
-        document.getElementById('bg-upload').onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    STATE.pendingBg = ev.target.result;
-                    // Show immediately as Preview
-                    DOM.bg.style.backgroundImage = `url('${STATE.pendingBg}')`;
-                    // Show "Apply" button
-                    DOM.applyBgBtn.style.display = 'inline-block';
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        // 2. User Clicks Apply
-        DOM.applyBgBtn.onclick = () => {
-            if(STATE.pendingBg) {
-                try {
-                    Storage.set('widget_bg', STATE.pendingBg);
-                    DOM.applyBgBtn.style.display = 'none'; // Hide button
-                } catch (e) {
-                    alert(STATE.lang === 'ar' ? "فشل الحفظ. الصورة كبيرة جدا للحفظ." : "Storage Error: Image too large to save permanently. It will work now, but won't be saved on refresh.");
-                }
-            }
-        };
-
-        // 3. User Clicks Reset
-        document.getElementById('reset-bg').onclick = () => {
-            STATE.pendingBg = null;
-            Storage.remove('widget_bg');
-            DOM.bg.style.backgroundImage = `url('${CONFIG.defaultBg}')`;
-            DOM.applyBgBtn.style.display = 'none';
-        };
 
         document.getElementById('reset-layout').onclick = () => {
             if(confirm(STATE.lang === 'ar' ? "هل أنت متأكد؟ سيتم حذف التخصيص." : "Are you sure? This will reset all widgets.")) {

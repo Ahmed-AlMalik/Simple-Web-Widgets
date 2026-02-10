@@ -369,9 +369,9 @@
                     <button class="dropdown-btn" id="dropdown-theme-btn">Default (Dark)</button>
                     <div class="dropdown-menu" id="dropdown-theme-menu">
                         <div class="dropdown-item selected" data-value="default">Default (Dark)</div>
-                        <div class="dropdown-item" data-value="forest">Deep Forest</div>
-                        <div class="dropdown-item" data-value="mist">Mist Gray</div>
-                        <div class="dropdown-item" data-value="ivory">Ivory & Brown</div>
+                        <div class="dropdown-item" data-value="forest">Green & Brown</div>
+                        <div class="dropdown-item" data-value="mist">White & Blue</div>
+                        <div class="dropdown-item" data-value="ivory">Beige & Brown</div>
                     </div>
                 </div>
                 <select id="ui-theme" style="display: none;">
@@ -545,8 +545,8 @@
         };
 
         const FONTS = {
-            en: [{ name: 'Inter (Modern)', family: "'Inter', sans-serif" }, { name: 'Playfair Display (Serif)', family: "'Playfair Display', serif" }, { name: 'Montserrat (Geometric)', family: "'Montserrat', sans-serif" }],
-            ar: [{ name: 'كايرو (حديث)', family: "'Cairo', sans-serif" }, { name: 'تجوال (هندسي)', family: "'Tajawal', sans-serif" }, { name: 'أميري (تقليدي)', family: "'Amiri', serif" }]
+            en: [{ name: 'Inter ', family: "'Inter', sans-serif" }, { name: 'Playfair Display ', family: "'Playfair Display', serif" }, { name: 'Montserrat ', family: "'Montserrat', sans-serif" }],
+            ar: [{ name: 'كايرو ', family: "'Cairo', sans-serif" }, { name: 'تجوال ', family: "'Tajawal', sans-serif" }, { name: 'أميري ', family: "'Amiri', serif" }]
         };
 
         const TRANSLATIONS = {
@@ -1107,7 +1107,7 @@
                 
                 const logo = document.createElement('img');
                 logo.className = 'google-logo';
-                logo.src = 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/google-color.png';
+                logo.src = 'google-color.png';
                 logo.alt = 'Google';
                 
                 const input = document.createElement('input');

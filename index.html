@@ -261,7 +261,7 @@
         .w-prayer[data-height="3"] .prayer-header { font-size: 1rem; border: none; margin: 0; text-align: center; }
         .w-prayer[data-height="3"] .prayer-progress { margin-top: 20px; }
 
-        .mini-btn { background: rgba(255,0,0,0.3); border: none; color: var(--text-main); width: 20px; height: 20px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .mini-btn { background: rgba(255,0,0,0.3); border: none; color: var(--text-main); width: 20px; height: 20px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; pointer-events: auto; }
 
         #grid-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -556,11 +556,11 @@
                 title: "Title", icon: "Icon (Emoji)", color: "Color", addToLayout: "Add to Layout",
                 language: "Interface Language", font: "Font Style", theme: "Theme",
                 defaultTheme: "Default (Dark)", forestTheme: "Deep Forest", mistTheme: "Mist Gray", ivoryTheme: "Ivory & Brown",
-                gridSize: "Grid Size", weatherLocation: "Location (Weather & Prayer)", factoryReset: "Factory Reset Layout",
+                gridSize: "Grid Size", weatherLocation: "Location (Weather & Prayer)", factoryReset: "Reset to Default Settings",
                 applyThemeColors: "Apply Theme Colors to Widgets",
                 autoLoc: "Auto Detect (GPS)",
                 fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha",
-                nextPrayer: "Next Prayer", iqamahIn: "Iqamah in", timePassed: "Time since Adhan",
+                nextPrayer: "Next Prayer", iqamahIn: "Iqamah in", timePassed: "Time since Adhan", untilNextPrayer: "until next prayer",
                 addTodo: "Add Todo", removeDone: "Remove Completed", confirmRemove: "Remove all checked items?",
                 searchPlaceholder: "Search Google..."
             },
@@ -570,11 +570,11 @@
                 title: "العنوان", icon: "أيقونة (إيموجي)", color: "اللون", addToLayout: "إضافة للتخطيط",
                 language: "لغة الواجهة", font: "نوع الخط", theme: "المظهر",
                 defaultTheme: "الافتراضي (داكن)", forestTheme: "الغابة العميقة", mistTheme: "الضباب الرمادي", ivoryTheme: "عاجي وبني",
-                gridSize: "حجم الشبكة", weatherLocation: "الموقع (الطقس والصلاة)", factoryReset: "إعادة ضبط المصنع",
+                gridSize: "حجم الشبكة", weatherLocation: "الموقع (الطقس والصلاة)", factoryReset: "إعادة تعيين الإعدادات الافتراضية",
                 applyThemeColors: "تطبيق ألوان المظهر على الأدوات",
                 autoLoc: "كشف تلقائي (GPS)",
                 fajr: "الفجر", dhuhr: "الظهر", asr: "العصر", maghrib: "المغرب", isha: "العشاء",
-                nextPrayer: "الصلاة القادمة", iqamahIn: "الإقامة بعد", timePassed: "مرّ وقت على الأذان",
+                nextPrayer: "الصلاة القادمة", iqamahIn: "الإقامة بعد", timePassed: "مرّ وقت على الأذان", untilNextPrayer: "حتى الصلاة القادمة",
                 addTodo: "إضافة مهمة", removeDone: "حذف المكتملة", confirmRemove: "حذف جميع العناصر المكتملة؟",
                 searchPlaceholder: "ابحث في جوجل..."
             }
@@ -682,51 +682,83 @@
         function updateLanguage(lang) {
             STATE.lang = lang;
             document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+            
+            // Update simple text elements
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (TRANSLATIONS[lang][key]) el.innerText = TRANSLATIONS[lang][key];
             });
 
-            // Update font dropdown
+            // --- FIX 6: Update Theme Dropdown Text ---
+            const themeMenu = document.getElementById('dropdown-theme-menu');
+            const themeBtn = document.getElementById('dropdown-theme-btn');
+            const currentThemeVal = DOM.themeSelect.value;
+            
+            themeMenu.innerHTML = '';
+            // Map internal values to translation keys
+            const themeKeys = { 'default': 'defaultTheme', 'forest': 'forestTheme', 'mist': 'mistTheme', 'ivory': 'ivoryTheme' };
+            
+            for (const [val, key] of Object.entries(themeKeys)) {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item' + (val === currentThemeVal ? ' selected' : '');
+                item.dataset.value = val;
+                item.innerText = TRANSLATIONS[lang][key];
+                themeMenu.appendChild(item);
+                
+                // Update the main button text if this is the selected theme
+                if(val === currentThemeVal) themeBtn.innerText = TRANSLATIONS[lang][key];
+            }
+            // Update the native select options too
+            Array.from(DOM.themeSelect.options).forEach(opt => {
+                if(themeKeys[opt.value]) opt.text = TRANSLATIONS[lang][themeKeys[opt.value]];
+            });
+            attachDropdownItemHandlers('dropdown-theme', 'ui-theme');
+
+
+            // --- FIX 1: Font Selection Logic ---
             const fontMenu = document.getElementById('dropdown-font-menu');
             const fontBtn = document.getElementById('dropdown-font-btn');
             fontMenu.innerHTML = '';
             DOM.fontSelect.innerHTML = '';
+            
             FONTS[lang].forEach(f => {
                 const opt = document.createElement('option'); opt.value = f.family; opt.innerText = f.name; DOM.fontSelect.appendChild(opt);
                 const item = document.createElement('div'); item.className = 'dropdown-item'; item.dataset.value = f.family; item.innerText = f.name; fontMenu.appendChild(item);
             });
-            const savedFont = Storage.get('widget_font');
-            if(savedFont) {
-                DOM.fontSelect.value = savedFont;
-                fontBtn.innerText = FONTS[lang].find(f => f.family === savedFont)?.name || 'Select Font';
-                document.documentElement.style.setProperty('--font-stack', savedFont);
-                Array.from(fontMenu.children).forEach(item => {
-                    if(item.dataset.value === savedFont) item.classList.add('selected');
-                });
-            } else {
-                fontBtn.innerText = 'Select Font';
+
+            // Check if user has a specifically saved font
+            let savedFont = Storage.get('widget_font');
+            
+            // If no saved font, OR if switching languages and the current font doesn't belong to the new language's set
+            // Force the default for that language.
+            const isFontSupported = FONTS[lang].some(f => f.family === savedFont);
+            
+            if (!savedFont || !isFontSupported) {
+                // Default Defaults
+                savedFont = lang === 'ar' ? "'Cairo', sans-serif" : "'Inter', sans-serif";
+                // Do NOT save to storage yet, so it remains "dynamic" until user manually picks one
             }
-            // Re-attach handlers after populating items
+
+            DOM.fontSelect.value = savedFont;
+            const fontObj = FONTS[lang].find(f => f.family === savedFont);
+            fontBtn.innerText = fontObj ? fontObj.name : (lang === 'ar' ? 'اختر الخط' : 'Select Font');
+            document.documentElement.style.setProperty('--font-stack', savedFont);
+            
+            Array.from(fontMenu.children).forEach(item => {
+                if(item.dataset.value === savedFont) item.classList.add('selected');
+            });
+
             attachDropdownItemHandlers('dropdown-font', 'ui-font');
 
             updateLocationDropdown(lang);
             
+            // --- FIX 7: Widget Refresh ---
             STATE.widgets.forEach(w => {
-                // Immediate UI Update
-                if(w.type === 'prayer' || w.type === 'notes' || w.type === 'todo' || w.type === 'google-search') w.refreshUI();
-                // Data Update
-                w.refreshData();
+                w.refreshUI();   // Update labels/static text
+                w.refreshData(); // Update time/content
             });
             
-            // Primary persistence method
             Storage.set('widget_lang', lang);
-            // Alternative persistence method using sessionStorage as backup
-            try {
-                sessionStorage.setItem('widget_lang_backup', lang);
-            } catch(e) {
-                console.warn("Session storage unavailable");
-            }
         }
 
         // --- WIDGET CLASSES ---
@@ -803,25 +835,45 @@
         class TimeWidget extends Widget {
             constructor(...args) {
                 super(...args);
-                this.minW = 3; this.minH = 2; // Slightly relaxed
+                this.minW = 3; this.minH = 2;
             }
             updateContent(container) {
                 const time = document.createElement('h1'); time.className = 'time-display';
                 const date = document.createElement('div'); date.className = 'date-display';
                 container.appendChild(time); container.appendChild(date);
                 this.contentRef = { time, date };
+                this.startTimer();
+            }
+            startTimer() {
+                if(this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => this.refreshData(), 1000);
+                this.refreshData();
+            }
+            refreshUI() {
+                // Trigger data refresh to update date string format
+                this.refreshData();
             }
             refreshData() {
                 const now = new Date();
+                
+                // --- FIX 2 & 4: Arabic Date & 12H Clock ---
                 if(STATE.lang === 'ar') {
-                    const hours = String(now.getHours()).padStart(2, '0');
+                    // Time: 12 Hour format with Arabic suffixes
+                    let hours = now.getHours();
                     const minutes = String(now.getMinutes()).padStart(2, '0');
-                    const ampm = now.getHours() < 12 ? 'ص' : 'م';
+                    const ampm = hours >= 12 ? 'م' : 'ص';
+                    hours = hours % 12;
+                    hours = hours ? hours : 12; // the hour '0' should be '12'
                     this.contentRef.time.innerText = `${hours}:${minutes} ${ampm}`;
+
+                    // Date: Gregorian Date in Arabic
+                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    this.contentRef.date.innerText = now.toLocaleDateString('ar-AE', options); 
                 } else {
-                    this.contentRef.time.innerText = now.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+                    // English: Standard 12H
+                    this.contentRef.time.innerText = now.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', hour12: true});
+                    this.contentRef.date.innerText = now.toLocaleDateString('en-US', {weekday: 'long', month: 'short', day: 'numeric'});
                 }
-                this.contentRef.date.innerText = now.toLocaleDateString(STATE.lang === 'ar' ? 'ar-UAE' : 'en-US', {weekday: 'long', month: 'short', day: 'numeric'});
             }
         }
 
@@ -877,6 +929,8 @@
             }
             refreshUI() { 
                 if(this.contentRef.header) this.contentRef.header.innerText = TRANSLATIONS[STATE.lang].prayerWidget; 
+                // Force re-render of list to apply new language/time format
+                if(this.lastTimings) this.renderPrayers(this.lastTimings);
             }
             refreshData() {
                 let lat = STATE.currentLoc.lat;
@@ -887,18 +941,37 @@
                 const url = `https://api.aladhan.com/v1/timings/${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}?latitude=${lat}&longitude=${lon}&method=17`;
                 fetch(url).then(res => res.json()).then(data => {
                     if(data.code === 200) {
+                        this.lastTimings = data.data.timings; // Save for UI refresh
                         this.renderPrayers(data.data.timings);
                         this.startTimer(data.data.timings);
                     }
                 }).catch(e => console.error(e));
             }
+            
+            // --- FIX 4: Helper for 12H Time ---
+            formatTime12(timeStr) {
+                // API returns "HH:MM" (24h)
+                let [h, m] = timeStr.split(':').map(Number);
+                let suffix = '';
+                if (STATE.lang === 'ar') {
+                    suffix = h >= 12 ? ' م' : ' ص';
+                } else {
+                    suffix = h >= 12 ? ' PM' : ' AM';
+                }
+                h = h % 12 || 12; 
+                return `${h}:${String(m).padStart(2, '0')}${suffix}`;
+            }
+
             renderPrayers(timings) {
                 const keys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
                 const t = TRANSLATIONS[STATE.lang];
                 const map = { 'Fajr': t.fajr, 'Dhuhr': t.dhuhr, 'Asr': t.asr, 'Maghrib': t.maghrib, 'Isha': t.isha };
                 let html = '';
                 keys.forEach(k => {
-                    html += `<div class="prayer-row" id="row-${this.id}-${k}"><span>${map[k]}</span><span>${timings[k]}</span></div>`;
+                    // Clean time string (remove timezone if present) and format
+                    let rawTime = timings[k].split(' ')[0]; 
+                    let displayTime = this.formatTime12(rawTime);
+                    html += `<div class="prayer-row" id="row-${this.id}-${k}"><span>${map[k]}</span><span>${displayTime}</span></div>`;
                 });
                 this.contentRef.list.innerHTML = html;
             }
@@ -908,11 +981,16 @@
                     const now = new Date();
                     const nowTime = now.getHours() * 60 + now.getMinutes();
                     const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+                    const t = TRANSLATIONS[STATE.lang];
+                    const map = { 'Fajr': t.fajr, 'Dhuhr': t.dhuhr, 'Asr': t.asr, 'Maghrib': t.maghrib, 'Isha': t.isha };
                     let nextPrayer = 'Fajr', nextTimeDiff = 1440; 
                     for(let p of prayers) {
                         const [h, m] = timings[p].split(':').map(Number);
                         const pTime = h * 60 + m;
-                        if(pTime > nowTime && pTime < nextTimeDiff) { nextTimeDiff = pTime - nowTime; nextPrayer = p; }
+                        if(pTime > nowTime) {
+                            const diff = pTime - nowTime;
+                            if(diff < nextTimeDiff) { nextTimeDiff = diff; nextPrayer = p; }
+                        }
                     }
                     document.querySelectorAll(`[id^="row-${this.id}"]`).forEach(el => el.classList.remove('active'));
                     const activeRow = document.getElementById(`row-${this.id}-${nextPrayer}`);
@@ -923,7 +1001,6 @@
                         const pTime = h * 60 + m;
                         if(pTime < nowTime) { prevPrayer = prayers[i]; prevTime = pTime; }
                     }
-                    const t = TRANSLATIONS[STATE.lang];
                     const bar = this.contentRef.bar;
                     const label = this.contentRef.nextLabel;
                     if(prevPrayer) {
@@ -931,17 +1008,20 @@
                         if(timeSince <= 30) {
                             const pct = (timeSince / 30) * 100;
                             bar.style.width = `${pct}%`;
-                            label.innerText = `${t.iqamahIn} ${30 - timeSince}m`;
+                            label.innerText = `${t.iqamahIn}: ${30 - timeSince}m`;
                         } else {
                             bar.style.width = '100%'; bar.style.opacity = '0.3';
-                            if(nextTimeDiff <= 60) {
-                                label.innerText = `${t.nextPrayer}: ${nextPrayer} (${nextTimeDiff}m)`;
-                            } else {
-                                label.innerText = `${t.nextPrayer}: ${nextPrayer}`;
-                            }
+                            const hours = Math.floor(nextTimeDiff / 60);
+                            const mins = nextTimeDiff % 60;
+                            const timeStr = `${hours}:${mins.toString().padStart(2, '0')}`;
+                            label.innerText = `${t.untilNextPrayer}: ${timeStr}`;
                         }
                     } else {
-                         bar.style.width = '0%'; label.innerText = `${t.nextPrayer}: Fajr`;
+                         bar.style.width = '0%'; 
+                         const hours = Math.floor(nextTimeDiff / 60);
+                         const mins = nextTimeDiff % 60;
+                         const timeStr = `${hours}:${mins.toString().padStart(2, '0')}`;
+                         label.innerText = `${t.untilNextPrayer}: ${timeStr}`;
                     }
                 };
                 update(); this.timerInterval = setInterval(update, 1000);
@@ -1357,18 +1437,24 @@
                 STATE.dragTarget.el.style.top = `${STATE.initialTop + dy}px`;
             }
             if (STATE.resizeTarget) {
-                const dx = e.clientX - STATE.startX; const dy = e.clientY - STATE.startY;
+                const dx = e.clientX - STATE.startX; 
+                const dy = e.clientY - STATE.startY;
                 
+                // --- FIX 5: RTL Logic ---
+                let effectiveDx = dx;
+                if (document.body.getAttribute('dir') === 'rtl') {
+                    effectiveDx = -dx; // Invert X movement for RTL
+                }
+
                 // 1. FLUID VISUAL UPDATE (Follow mouse pixels)
-                let newPixelW = Math.max(CONFIG.gridSize, STATE.initialPixelW + dx); // Min 1 grid cell
+                let newPixelW = Math.max(CONFIG.gridSize, STATE.initialPixelW + effectiveDx); 
                 let newPixelH = Math.max(CONFIG.gridSize, STATE.initialPixelH + dy);
                 
                 STATE.resizeTarget.el.style.width = `${newPixelW}px`;
                 STATE.resizeTarget.el.style.height = `${newPixelH}px`;
 
-                // 2. LOGICAL GRID UPDATE (For internal state snapping later)
-                // Calculate new grid units roughly for data tracking
-                const dw = Math.round(dx / CONFIG.gridSize);
+                // 2. LOGICAL GRID UPDATE
+                const dw = Math.round(effectiveDx / CONFIG.gridSize);
                 const dh = Math.round(dy / CONFIG.gridSize);
                 let newW = Math.max(STATE.resizeTarget.minW, STATE.initialW + dw);
                 let newH = Math.max(STATE.resizeTarget.minH, STATE.initialH + dh);
@@ -1595,10 +1681,40 @@
         };
         DOM.locSelect.onchange = handleLocationChange;
 
+        // --- FIX 3: Robust Factory Reset ---
         document.getElementById('reset-layout').onclick = () => {
-            if(confirm(STATE.lang === 'ar' ? "هل أنت متأكد؟ سيتم حذف التخصيص." : "Are you sure? This will reset all widgets.")) {
+            const confirmMsg = STATE.lang === 'ar' 
+                ? "هل أنت متأكد؟ سيتم إعادة تعيين كل شيء (التخطيط، الخطوط، حجم الشبكة) إلى الوضع الافتراضي." 
+                : "Are you sure? This will reset layout, fonts, and grid size to defaults.";
+
+            if(confirm(confirmMsg)) {
+                // 1. Clear Storage
                 Storage.remove('widget_layout');
-                DOM.container.innerHTML = ''; STATE.widgets = []; setupDefaultLayout();
+                Storage.remove('widget_grid_size'); // Reset grid preference
+                Storage.remove('widget_font');      // Reset font preference
+                Storage.remove('widget_theme');
+                Storage.remove('widget_bg_color');
+                
+                // 2. Reset Runtime Config
+                CONFIG.gridSize = 80;
+                document.documentElement.style.setProperty('--font-stack', "'Inter', sans-serif"); // visual reset
+                
+                // 3. Reset UI Controls
+                DOM.gridSizeInput.value = 80;
+                DOM.fileSizeVal.innerText = "80px";
+                DOM.gridOverlay.style.setProperty('--cell-size', "80px");
+                
+                // Reset Theme
+                applyTheme('default');
+                DOM.themeSelect.value = 'default';
+
+                // 4. Reload Language (This handles resetting the font dropdowns correctly based on current lang)
+                updateLanguage(STATE.lang);
+
+                // 5. Rebuild Layout
+                DOM.container.innerHTML = ''; 
+                STATE.widgets = []; 
+                setupDefaultLayout();
             }
         };
 
